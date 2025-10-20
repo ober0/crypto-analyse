@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src",
+  "compilerOptions": {
+    "deleteOutDir": true,
+    "webpack": true
+  },
+  "projects": {
+    "cache": {
+      "type": "library",
+      "root": "libs/cache",
+      "entryFile": "index",
+      "sourceRoot": "libs/cache/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/cache/tsconfig.lib.json"
+      }
+    },
+    "common-dto": {
+      "type": "library",
+      "root": "libs/common-dto",
+      "entryFile": "index",
+      "sourceRoot": "libs/common-dto/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/common-dto/tsconfig.lib.json"
+      }
+    },
+    "decorators": {
+      "type": "library",
+      "root": "libs/decorators",
+      "entryFile": "index",
+      "sourceRoot": "libs/decorators/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/decorators/tsconfig.lib.json"
+      }
+    },
+    "tools": {
+      "type": "library",
+      "root": "libs/tools",
+      "entryFile": "index",
+      "sourceRoot": "libs/tools/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/tools/tsconfig.lib.json"
+      }
+    }
+  }
+}

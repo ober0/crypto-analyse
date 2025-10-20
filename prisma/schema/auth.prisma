@@ -1,0 +1,23 @@
+enum RoleNames {
+  Admin
+  User
+
+  @@map("role_names")
+}
+
+model Role {
+  id    Int       @id @default(autoincrement())
+  name  RoleNames @unique
+  users User[]
+
+  @@map("role")
+}
+
+model RefreshToken {
+  id     String @id @default(uuid())
+  token  String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int    @map("user_id")
+
+  @@map("refresh_token")
+}

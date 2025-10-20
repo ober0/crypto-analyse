@@ -1,0 +1,48 @@
+version: "3.9"
+
+services:
+    base-template-postgres:
+        image: postgres:15
+        container_name: base-template-postgres
+        restart: always
+        environment:
+            POSTGRES_USER: admin
+            POSTGRES_PASSWORD: admin
+            POSTGRES_DB: base-template
+        volumes:
+            - pgdata:/var/lib/postgresql/data
+        ports:
+            - 5432:5432
+
+    base-template-redis:
+        image: redis:alpine
+        ports:
+            - "6379:6379"
+        restart: always
+
+    base-template-backend:
+        build: .
+        container_name: base-template-backend
+        restart: always
+        depends_on:
+            - base-template-postgres
+            - base-template-redis
+        environment:
+            DATABASE_URL: postgres://admin:admin@base-template-postgres:5432/base-template
+            REDIS_URL: redis://base-template-redis:6379
+            NODE_ENV: production
+        env_file:
+            - .env
+        ports:
+            - "3000:3000"
+        command: >
+            sh -c "
+                npm run migrate:deploy
+                npm run generate
+                npm run seed
+                npm run prod
+            " 
+
+
+volumes:
+    pgdata:
