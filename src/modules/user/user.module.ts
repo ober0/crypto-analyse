@@ -1,11 +1,9 @@
 import { Global, Module } from "@nestjs/common";
-import { UserController } from "./user.controller";
 import { UserService } from "./user.service";
 import { UserRepository } from "./user.repository";
 
 @Global()
 @Module({
-    controllers: [UserController],
     providers: [UserService, UserRepository],
     exports: [UserService]
 })
