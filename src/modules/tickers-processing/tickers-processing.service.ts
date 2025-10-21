@@ -9,5 +9,9 @@ export class TickersProcessingService {
     @Cron(CronExpression.EVERY_DAY_AT_NOON)
     async cron() {
         const symbols = await this.tickerService.getAll();
+
+        for (const symbol of symbols) {
+            await this.tickerService;
+        }
     }
 }
