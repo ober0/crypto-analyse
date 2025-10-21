@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { userSeed } from "./user.seed";
 import { roleSeed } from "./role.seed";
+import { tickersSeed } from "./tickers";
 
 const prisma = new PrismaClient();
 
@@ -10,6 +11,9 @@ async function main() {
 
     await userSeed(prisma);
     console.log("[+] Пользователи созданы");
+
+    await tickersSeed(prisma);
+    console.log("[+] Тикеры созданы");
 
     console.log("[+] Все готово");
 }

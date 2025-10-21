@@ -1,0 +1,46 @@
+model Tickers {
+  id Int @id @default(autoincrement())
+
+  name             String
+  tickerProcessing TickerProcessing[]
+
+  @@map("tickers")
+}
+
+enum TimeframeEnum {
+  OneDay
+  OneWeek
+
+  @@map("timeframe_enum")
+}
+
+enum DirectionEnum {
+  Short
+  Long
+  Nothing
+
+  @@map("direction_enum")
+}
+
+model TickerProcessing {
+  id        Int           @id @default(autoincrement())
+  ticker    Tickers       @relation(fields: [tickersId], references: [id])
+  tickersId Int
+  timeframe TimeframeEnum
+
+  direction DirectionEnum
+
+  leverage   Int?
+  stopLoss   Int?
+  takeProfit Int?
+
+  currentPrice   Int
+  predictedPrice Int
+  realPricr      Int?
+
+  isClosed  Boolean  @default(false)
+  closedAt  DateTime
+  createdAt DateTime @default(now())
+
+  @@map("ticker_processing")
+}
