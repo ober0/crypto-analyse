@@ -36,7 +36,7 @@ model TickerProcessing {
 
   currentPrice   Int
   predictedPrice Int
-  realPricr      Int?
+  realPrice      Int?
 
   isClosed  Boolean  @default(false)
   closedAt  DateTime
