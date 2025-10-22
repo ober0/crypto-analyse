@@ -38,9 +38,12 @@ model TickerProcessing {
   predictedPrice Int
   realPrice      Int?
 
-  isClosed  Boolean  @default(false)
-  closedAt  DateTime
-  createdAt DateTime @default(now())
+  difference         Int?
+  leverageDifference Int?
+
+  isClosed  Boolean   @default(false)
+  closedAt  DateTime?
+  createdAt DateTime  @default(now())
 
   @@map("ticker_processing")
 }

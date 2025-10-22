@@ -28,8 +28,7 @@ export function getTickerAnalysisSchema(interval: TimeframeEnum) {
             },
             predictedPrice: {
                 type: "number",
-                description:
-                    'Прогнозируемая цена закрытия позиции, рассчитанная моделью. на ближайшие ${interval === TimeframeEnum.OneDay ? "один день" : "одну неделю"'
+                description: `Прогнозируемая цена закрытия позиции, рассчитанная моделью. на ближайшие ${interval === TimeframeEnum.OneDay ? "один день" : "одну неделю"}`
             }
         },
         required: ["direction", "predictedPrice"]

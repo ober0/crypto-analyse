@@ -55,7 +55,6 @@ export class AuthController {
             maxAge: 1000 * 3600 * 24 * 7 // 7 дней
         });
 
-
         return {
             accessToken: data.accessToken
         };
@@ -65,11 +64,20 @@ export class AuthController {
     @HttpCode(HttpStatus.OK)
     @ApiOkResponse()
     @Post("logout")
-    async logout(@Req() request: express.Request): Promise<void> {
+    async logout(
+        @Req() request: express.Request,
+        @Res({ passthrough: true }) response: express.Response
+    ): Promise<void> {
         const refreshToken = request.cookies["refreshToken"];
         if (!refreshToken) {
             throw new ForbiddenException("Refresh токен не найден");
         }
+
+        response.clearCookie("refreshToken", {
+            secure: true,
+            sameSite: "none",
+            httpOnly: true
+        });
 
         await this.authService.logout(refreshToken);
     }
