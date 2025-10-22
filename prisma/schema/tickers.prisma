@@ -40,6 +40,7 @@ model TickerProcessing {
 
   difference         Int?
   leverageDifference Int?
+  percentDifference  Int?
 
   isClosed  Boolean   @default(false)
   closedAt  DateTime?

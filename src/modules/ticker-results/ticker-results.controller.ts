@@ -1,4 +1,4 @@
-import { Controller } from '@nestjs/common';
+import { Controller } from "@nestjs/common";
 
-@Controller('ticker-results')
+@Controller("ticker-results")
 export class TickerResultsController {}

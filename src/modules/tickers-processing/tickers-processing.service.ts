@@ -11,6 +11,7 @@ import { SymbolDataResponseDto } from "../market-data/dto/response.dto";
 import { MarketDataService } from "../market-data/market-data.service";
 import { TickerAnalysis } from "./types/ai-response";
 import { TickerResultsService } from "../ticker-results/ticker-results.service";
+import { CreateTickerProcessingDto } from "../ticker-results/types";
 
 @Injectable()
 export class TickersProcessingService {
@@ -62,7 +63,7 @@ export class TickersProcessingService {
                 throw new Error("No ai response");
             }
 
-            const saveData = {
+            const saveData: CreateTickerProcessingDto = {
                 stopLoss: aiResponse.stopLoss,
                 takeProfit: aiResponse.takeProfit,
                 timeframe,
@@ -73,7 +74,8 @@ export class TickersProcessingService {
                     marketData.oneDay?.at(0)?.close ??
                     marketData.oneWeek?.at(0)?.close ??
                     0,
-                tickerId: symbol.id
+                tickerId: symbol.id,
+                direction: aiResponse.direction
             };
 
             if (saveData.currentPrice === 0) {
