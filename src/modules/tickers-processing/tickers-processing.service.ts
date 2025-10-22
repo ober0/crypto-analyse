@@ -23,6 +23,10 @@ export class TickersProcessingService {
         private readonly tickerResultsService: TickerResultsService
     ) {}
 
+    async onModuleInit() {
+        await this.cron();
+    }
+
     @Cron(CronExpression.EVERY_DAY_AT_NOON)
     async cron() {
         const symbols = await this.tickerService.getAll();
@@ -33,7 +37,9 @@ export class TickersProcessingService {
                 this.analyseSymbol(symbol, TimeframeEnum.OneWeek)
             ]);
             this.logger.log(
-                `Символ ${symbol} проанализирован (успешно: ${results.map((el) => el.status === "fulfilled")}/${results.length})`
+                `Символ ${symbol.name} проанализирован (успешно: ${
+                    results.filter((el) => el.status === "fulfilled").length
+                }/${results.length})`
             );
         }
     }
@@ -59,9 +65,14 @@ export class TickersProcessingService {
 
         try {
             const aiResponse: TickerAnalysis | null = await this.chatgptService.sendMessageToAi(prompt);
+            console.log(aiResponse);
             if (!aiResponse) {
                 throw new Error("No ai response");
             }
+
+            const closedAt = new Date(
+                Date.now() + timeframe === TimeframeEnum.OneDay ? 1000 * 60 * 60 * 24 : 1000 * 60 * 60 * 24 * 7
+            );
 
             const saveData: CreateTickerProcessingDto = {
                 stopLoss: aiResponse.stopLoss,
@@ -75,7 +86,8 @@ export class TickersProcessingService {
                     marketData.oneWeek?.at(0)?.close ??
                     0,
                 tickerId: symbol.id,
-                direction: aiResponse.direction
+                direction: aiResponse.direction,
+                closedAt
             };
 
             if (saveData.currentPrice === 0) {

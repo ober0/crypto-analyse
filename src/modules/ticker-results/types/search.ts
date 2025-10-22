@@ -5,8 +5,11 @@ import { Type } from "class-transformer";
 import { CommonSearchResponseDto } from "@app/common-dto/search-response.dto";
 import { DirectionEnum, TimeframeEnum } from "@prisma/client";
 import { Contains } from "@app/tools/contains.decorator";
-import { NumberMinMaxFilterDto } from "@app/common-dto/min-max.filter.dto";
+import { DateMinMaxFilterDto } from "@app/common-dto/min-max.filter.dto";
 import { SortDtoGenerator } from "@app/common-dto/sort-generate.dto";
+import { TickerResponseDto } from "../../tickers/dto/response.dto";
+
+class Ticker extends OmitType(TickerResponseDto, ["processCount"]) {}
 
 export class TickerResultsResponseDto {
     @ApiProperty()
@@ -16,20 +19,18 @@ export class TickerResultsResponseDto {
     tickersId: number;
 
     @ApiProperty({ enum: TimeframeEnum })
-    @Contains()
     timeframe: TimeframeEnum;
 
     @ApiProperty({ enum: DirectionEnum })
-    @Contains()
     direction: DirectionEnum;
 
-    @ApiProperty({ required: false })
+    @ApiProperty({ required: false, type: Number })
     leverage?: number | null;
 
-    @ApiProperty({ required: false })
+    @ApiProperty({ required: false, type: Number })
     stopLoss?: number | null;
 
-    @ApiProperty({ required: false })
+    @ApiProperty({ required: false, type: Number })
     takeProfit?: number | null;
 
     @ApiProperty()
@@ -38,36 +39,49 @@ export class TickerResultsResponseDto {
     @ApiProperty()
     predictedPrice: number;
 
-    @ApiProperty({ required: false })
+    @ApiProperty({ required: false, type: Number })
     realPrice?: number | null;
 
-    @ApiProperty({ required: false })
+    @ApiProperty({ required: false, type: Number })
     difference?: number | null;
 
-    @ApiProperty({ required: false })
+    @ApiProperty({ required: false, type: Number })
     leverageDifference?: number | null;
 
-    @ApiProperty({ required: false })
+    @ApiProperty({ required: false, type: Number })
     percentDifference?: number | null;
 
     @ApiProperty()
     isClosed: boolean;
 
-    @ApiProperty({ required: false })
+    @ApiProperty({ required: false, type: Date })
     closedAt?: Date | null;
 
     @ApiProperty()
     createdAt: Date;
+
+    @ApiProperty({ type: Ticker })
+    @ValidateNested()
+    @Type(() => Ticker)
+    ticker: Ticker;
 }
 
 export class FiltersTickerResultsDto extends PartialType(
-    OmitType(TickerResultsResponseDto, ["id", "tickersId", "createdAt", "closedAt"])
+    OmitType(TickerResultsResponseDto, ["id", "tickersId", "createdAt", "closedAt", "ticker", "timeframe", "direction"])
 ) {
-    @ApiProperty({ type: NumberMinMaxFilterDto })
+    @ApiProperty({ type: DateMinMaxFilterDto })
     @IsOptional()
     @ValidateNested()
-    @Type(() => NumberMinMaxFilterDto)
-    closedAt?: NumberMinMaxFilterDto;
+    @Type(() => DateMinMaxFilterDto)
+    closedAt?: DateMinMaxFilterDto;
+
+    @ApiProperty({ enum: TimeframeEnum })
+    @Contains()
+    timeframe: TimeframeEnum;
+
+    @ApiProperty({ enum: DirectionEnum })
+    @Contains()
+    direction: DirectionEnum;
 }
 export class SortsTickerResultsDto extends SortDtoGenerator({
     itemClass: TickerResultsResponseDto,
@@ -86,4 +100,4 @@ export class SearchTickerResultsDto extends SearchBaseDto<FiltersTickerResultsDt
     declare sorts: SortsTickerResultsDto;
 }
 
-export class SearchResponseDto extends CommonSearchResponseDto(TickerResultsResponseDto) {}
+export class TickerResultsSearchResponseDto extends CommonSearchResponseDto(TickerResultsResponseDto) {}

@@ -20,11 +20,11 @@ export class ChatgptService {
             response = await this.openai.chat.completions.create({
                 model: "gpt-5-nano",
                 messages,
-                temperature: 0,
                 response_format: { type: "json_object" },
                 stream: false
             });
-        } catch {
+        } catch (err) {
+            console.error(err);
             return null;
         }
 

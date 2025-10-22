@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { TickerResultsRepository } from "./ticker-results.repository";
 import { CreateTickerProcessingDto, TickerResultsResponse, UpdateTickerProcessingDto } from "./types";
+import { SearchTickerResultsDto, TickerResultsResponseDto, TickerResultsSearchResponseDto } from "./types/search";
 
 @Injectable()
 export class TickerResultsService {
@@ -12,5 +13,14 @@ export class TickerResultsService {
 
     async update(id: number, dto: UpdateTickerProcessingDto): Promise<TickerResultsResponse> {
         return this.repository.update(id, dto);
+    }
+
+    async search(dto: SearchTickerResultsDto): Promise<TickerResultsSearchResponseDto> {
+        const [data, count] = await Promise.all([this.repository.search(dto), this.repository.count(dto)]);
+
+        return {
+            data,
+            count
+        };
     }
 }

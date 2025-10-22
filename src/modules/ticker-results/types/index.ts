@@ -9,6 +9,7 @@ export type CreateTickerProcessingDto = {
     takeProfit?: number | null;
     currentPrice: number;
     predictedPrice: number;
+    closedAt?: Date | null;
 };
 
 export type UpdateTickerProcessingDto = {
@@ -17,7 +18,6 @@ export type UpdateTickerProcessingDto = {
     leverageDifference?: number | null;
     percentDifference?: number | null;
     isClosed?: boolean;
-    closedAt?: Date | null;
 };
 
 export type TickerResultsResponse = TickerProcessing & { ticker: Tickers };
