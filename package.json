@@ -6,8 +6,9 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "nest build",
+    "build": "nest build && tsc",
     "seed": "ts-node -r tsconfig-paths/register ./prisma/seeds/seed.ts",
+    "seed:deploy": "node dist/prisma/seeds/seed.js",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"libs/**/*.ts\"",
     "dev": "nest start --watch",
     "prod": "node dist/main.js",
