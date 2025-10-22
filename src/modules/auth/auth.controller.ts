@@ -65,7 +65,7 @@ export class AuthController {
     @HttpCode(HttpStatus.OK)
     @ApiOkResponse()
     @Post("logout")
-    async logout(@Req() request: express.Request,): Promise<void> {
+    async logout(@Req() request: express.Request): Promise<void> {
         const refreshToken = request.cookies["refreshToken"];
         if (!refreshToken) {
             throw new ForbiddenException("Refresh токен не найден");
