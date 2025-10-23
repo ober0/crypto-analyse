@@ -1,5 +1,5 @@
 import { SearchBaseDto } from "@app/common-dto/base-search.dto";
-import { IsOptional, ValidateNested } from "class-validator";
+import { IsArray, IsNumber, isNumber, IsOptional, IsString, ValidateNested } from "class-validator";
 import { ApiProperty, OmitType, PartialType } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import { CommonSearchResponseDto } from "@app/common-dto/search-response.dto";
@@ -82,6 +82,10 @@ export class FiltersTickerResultsDto extends PartialType(
     @ApiProperty({ enum: DirectionEnum })
     @Contains()
     direction: DirectionEnum;
+
+    @ApiProperty({ type: Number, isArray: true })
+    @IsNumber({}, { each: true })
+    tickersIds: number[];
 }
 export class SortsTickerResultsDto extends SortDtoGenerator({
     itemClass: TickerResultsResponseDto,
