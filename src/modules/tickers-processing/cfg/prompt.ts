@@ -25,8 +25,7 @@ export function getTickerAnalysisSchema(interval: TimeframeEnum, priceNow: numbe
             takeProfit: {
                 type: "number",
                 nullable: true,
-                description:
-                    "Уровень тейк-профита для позиции. Если отсутствует, null.  Учти, что цена сейчас - ${priceNow}, а прогноз на ${interval}"
+                description: `Уровень тейк-профита для позиции. Если отсутствует, null.  Учти, что цена сейчас - ${priceNow}, а прогноз на ${interval}`
             },
             predictedPrice: {
                 type: "number",

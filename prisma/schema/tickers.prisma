@@ -38,17 +38,17 @@ model TickerProcessing {
 
   direction DirectionEnum
 
-  leverage   Int?
-  stopLoss   Int?
-  takeProfit Int?
+  leverage   Float?
+  stopLoss   Float?
+  takeProfit Float?
 
-  currentPrice   Int
-  predictedPrice Int
-  realPrice      Int?
+  currentPrice   Float
+  predictedPrice Float
+  realPrice      Float?
 
-  difference         Int?
-  leverageDifference Int?
-  percentDifference  Int?
+  difference         Float?
+  leverageDifference Float?
+  percentDifference  Float?
 
   isClosed  Boolean   @default(false)
   closedAt  DateTime?

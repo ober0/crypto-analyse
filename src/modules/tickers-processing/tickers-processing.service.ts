@@ -104,7 +104,7 @@ export class TickersProcessingService {
                 }
 
                 const closedAt = new Date(
-                    Date.now() + timeframe === TimeframeEnum.OneDay ? 1000 * 60 * 60 * 24 : 1000 * 60 * 60 * 24 * 7
+                    Date.now() + (timeframe === TimeframeEnum.OneDay ? 1000 * 60 * 60 * 24 : 1000 * 60 * 60 * 24 * 7)
                 );
 
                 if (!aiResponse.direction || aiResponse.direction === "Nothing") {
@@ -114,6 +114,7 @@ export class TickersProcessingService {
                 const saveData: CreateTickerProcessingDto = {
                     stopLoss: aiResponse.stopLoss,
                     takeProfit: aiResponse.takeProfit,
+                    leverage: aiResponse.leverage,
                     timeframe,
                     predictedPrice: aiResponse.predictedPrice,
                     currentPrice,
@@ -135,11 +136,15 @@ export class TickersProcessingService {
             }
         };
 
-        await Promise.allSettled([
-            sendDataToAi(this.chatgptService),
-            sendDataToAi(this.deepseekService),
-            sendDataToAi(this.qwenService)
-        ]);
+        const services = [this.chatgptService, this.deepseekService, this.qwenService];
+
+        for (const service of services) {
+            try {
+                await sendDataToAi(service);
+            } catch {
+                /* empty */
+            }
+        }
     }
 
     private async getMarketData(symbol: string, timeframe: TimeframeEnum) {

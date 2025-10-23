@@ -8,8 +8,7 @@ enum SymbolEnum {
     DOGEUSDT = "DOGEUSDT",
     TRXUSDT = "TRXUSDT",
     ADAUSDT = "ADAUSDT",
-    TONUSDT = "TONUSDT",
-    PEPEUSDT = "PEPEUSDT"
+    TONUSDT = "TONUSDT"
 }
 
 export async function tickersSeed(prisma: PrismaClient) {

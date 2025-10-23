@@ -22,7 +22,8 @@ export class TickerResultsRepository {
                 takeProfit: data.takeProfit,
                 currentPrice: data.currentPrice,
                 predictedPrice: data.predictedPrice,
-                model: data.model
+                model: data.model,
+                closedAt: data.closedAt
             },
             include: {
                 ticker: true
