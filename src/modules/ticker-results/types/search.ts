@@ -97,7 +97,15 @@ export class FiltersTickerResultsDto extends PartialType(
 }
 export class SortsTickerResultsDto extends SortDtoGenerator({
     itemClass: TickerResultsResponseDto,
-    includedValue: ["percentDifference", "difference", "percentDifference", "direction", "isClosed", "closedAt"]
+    includedValue: [
+        "percentDifference",
+        "difference",
+        "percentDifference",
+        "direction",
+        "isClosed",
+        "closedAt",
+        "createdAt"
+    ]
 }) {}
 
 export class SearchTickerResultsDto extends SearchBaseDto<FiltersTickerResultsDto, SortsTickerResultsDto> {
