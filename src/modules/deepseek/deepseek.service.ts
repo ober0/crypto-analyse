@@ -1,31 +1,52 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { OpenAI } from "openai";
 import { ChatCompletionMessageParam } from "openai/resources";
+import { ChatCompletion } from "openai/src/resources/chat/completions/completions";
 
 @Injectable()
-export class ChatgptService {
-    private readonly logger: Logger = new Logger(ChatgptService.name);
+export class DeepseekService {
+    private readonly logger: Logger = new Logger(DeepseekService.name);
 
     private readonly openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY
+        baseURL: "https://openrouter.ai/api/v1",
+        apiKey: process.env.OPENROUTER_API_KEY
+    });
+
+    private readonly openaiReserve = new OpenAI({
+        baseURL: "https://openrouter.ai/api/v1",
+        apiKey: process.env.OPENROUTER_RESERVE_API_KEY
     });
 
     async sendMessageToAi<T extends object>(messages: ChatCompletionMessageParam[]): Promise<T | null> {
-        this.logger.log(`Запрос в ИИ chatgpt... Символов: ${JSON.stringify(messages).length}`);
+        this.logger.log(`Запрос в ИИ deepseek... Символов: ${JSON.stringify(messages).length}`);
 
         const start = Date.now();
 
-        let response;
+        let response: ChatCompletion;
         try {
             response = await this.openai.chat.completions.create({
-                model: "gpt-5-nano",
+                model: "tngtech/deepseek-r1t-chimera:free",
                 messages,
                 response_format: { type: "json_object" },
                 stream: false
             });
         } catch (err) {
-            console.error(err);
-            return null;
+            if (err.status === 429) {
+                try {
+                    response = await this.openaiReserve.chat.completions.create({
+                        model: "tngtech/deepseek-r1t-chimera:free",
+                        messages,
+                        response_format: { type: "json_object" },
+                        stream: false
+                    });
+                } catch (err) {
+                    console.error(err);
+                    return null;
+                }
+            } else {
+                console.error(err);
+                return null;
+            }
         }
 
         const diff = Date.now() - start;
@@ -42,7 +63,7 @@ export class ChatgptService {
                 : `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 
         this.logger.log(
-            `Ответ от ИИ chatgpt получен. Символов: ${JSON.stringify(response.choices[0].message.content).length} 
+            `Ответ от ИИ deepseek получен. Символов: ${JSON.stringify(response.choices[0].message.content).length} 
                 Времени: ${processTime}`
         );
 

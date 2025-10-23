@@ -3,7 +3,7 @@ import { IsArray, IsNumber, isNumber, IsOptional, IsString, ValidateNested } fro
 import { ApiProperty, OmitType, PartialType } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import { CommonSearchResponseDto } from "@app/common-dto/search-response.dto";
-import { DirectionEnum, TimeframeEnum } from "@prisma/client";
+import { DirectionEnum, Models, TimeframeEnum } from "@prisma/client";
 import { Contains } from "@app/tools/contains.decorator";
 import { DateMinMaxFilterDto } from "@app/common-dto/min-max.filter.dto";
 import { SortDtoGenerator } from "@app/common-dto/sort-generate.dto";
@@ -84,6 +84,11 @@ export class FiltersTickerResultsDto extends PartialType(
     @IsOptional()
     @Contains()
     direction?: DirectionEnum;
+
+    @ApiProperty({ enum: Models })
+    @IsOptional()
+    @Contains()
+    model?: Models;
 
     @ApiProperty({ type: Number, isArray: true })
     @IsOptional()

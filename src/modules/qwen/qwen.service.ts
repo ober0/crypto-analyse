@@ -3,29 +3,49 @@ import { OpenAI } from "openai";
 import { ChatCompletionMessageParam } from "openai/resources";
 
 @Injectable()
-export class ChatgptService {
-    private readonly logger: Logger = new Logger(ChatgptService.name);
+export class QwenService {
+    private readonly logger: Logger = new Logger(QwenService.name);
 
     private readonly openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY
+        baseURL: "https://openrouter.ai/api/v1",
+        apiKey: process.env.OPENROUTER_API_KEY
+    });
+
+    private readonly openaiReserve = new OpenAI({
+        baseURL: "https://openrouter.ai/api/v1",
+        apiKey: process.env.OPENROUTER_RESERVE_API_KEY
     });
 
     async sendMessageToAi<T extends object>(messages: ChatCompletionMessageParam[]): Promise<T | null> {
-        this.logger.log(`Запрос в ИИ chatgpt... Символов: ${JSON.stringify(messages).length}`);
+        this.logger.log(`Запрос в ИИ qwen... Символов: ${JSON.stringify(messages).length}`);
 
         const start = Date.now();
 
         let response;
         try {
             response = await this.openai.chat.completions.create({
-                model: "gpt-5-nano",
+                model: "qwen/qwen3-30b-a3b:free",
                 messages,
                 response_format: { type: "json_object" },
                 stream: false
             });
         } catch (err) {
-            console.error(err);
-            return null;
+            if (err.status === 429) {
+                try {
+                    response = await this.openaiReserve.chat.completions.create({
+                        model: "qwen/qwen3-30b-a3b:free",
+                        messages,
+                        response_format: { type: "json_object" },
+                        stream: false
+                    });
+                } catch (err) {
+                    console.error(err);
+                    return null;
+                }
+            } else {
+                console.error(err);
+                return null;
+            }
         }
 
         const diff = Date.now() - start;
@@ -42,7 +62,7 @@ export class ChatgptService {
                 : `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 
         this.logger.log(
-            `Ответ от ИИ chatgpt получен. Символов: ${JSON.stringify(response.choices[0].message.content).length} 
+            `Ответ от ИИ qwen получен. Символов: ${JSON.stringify(response.choices[0].message.content).length} 
                 Времени: ${processTime}`
         );
 

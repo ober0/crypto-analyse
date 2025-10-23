@@ -21,7 +21,8 @@ export class TickerResultsRepository {
                 stopLoss: data.stopLoss,
                 takeProfit: data.takeProfit,
                 currentPrice: data.currentPrice,
-                predictedPrice: data.predictedPrice
+                predictedPrice: data.predictedPrice,
+                model: data.model
             },
             include: {
                 ticker: true

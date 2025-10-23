@@ -1,4 +1,4 @@
-import { DirectionEnum, TickerProcessing, Tickers, TimeframeEnum } from "@prisma/client";
+import { DirectionEnum, Models, TickerProcessing, Tickers, TimeframeEnum } from "@prisma/client";
 
 export type CreateTickerProcessingDto = {
     tickerId: number;
@@ -9,6 +9,7 @@ export type CreateTickerProcessingDto = {
     takeProfit?: number | null;
     currentPrice: number;
     predictedPrice: number;
+    model: Models;
     closedAt?: Date | null;
 };
 

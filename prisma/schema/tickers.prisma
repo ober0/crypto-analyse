@@ -22,11 +22,19 @@ enum DirectionEnum {
   @@map("direction_enum")
 }
 
+enum Models {
+  Gpt5
+  DeepseekR1T
+  Qwen3
+}
+
 model TickerProcessing {
   id        Int           @id @default(autoincrement())
   ticker    Tickers       @relation(fields: [tickersId], references: [id])
   tickersId Int
   timeframe TimeframeEnum
+
+  model Models
 
   direction DirectionEnum
 

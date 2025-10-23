@@ -8,6 +8,8 @@ import { TickersModule } from "../tickers/tickers.module";
 import { ChatgptModule } from "../chatgpt/chatgpt.module";
 import { TickerResultsModule } from "../ticker-results/ticker-results.module";
 import { TickersProcessingModule } from "../tickers-processing/tickers-processing.module";
+import { DeepseekModule } from "../deepseek/deepseek.module";
+import { QwenModule } from "../qwen/qwen.module";
 
 @Module({
     imports: [
@@ -18,7 +20,9 @@ import { TickersProcessingModule } from "../tickers-processing/tickers-processin
         TickersModule,
         ChatgptModule,
         TickerResultsModule,
-        TickersProcessingModule
+        TickersProcessingModule,
+        DeepseekModule,
+        QwenModule
     ]
 })
 export class AppModule {}
