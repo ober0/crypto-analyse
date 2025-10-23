@@ -1,13 +1,12 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { TickersService } from "../tickers/tickers.service";
-import { Models, Prisma, TimeframeEnum } from "@prisma/client";
+import { Models, TimeframeEnum } from "@prisma/client";
 import { TickerResponseDto } from "../tickers/dto/response.dto";
 import { ChatCompletionMessageParam } from "openai/resources";
 import { getTickerAnalysisPrompt, getTickerAnalysisSchema } from "./cfg/prompt";
 import { ChatgptService } from "../chatgpt/chatgpt.service";
 import { MarketData } from "./types/market-data";
-import { SymbolDataResponseDto } from "../market-data/dto/response.dto";
 import { MarketDataService } from "../market-data/market-data.service";
 import { TickerAnalysis } from "./types/ai-response";
 import { TickerResultsService } from "../ticker-results/ticker-results.service";
@@ -30,44 +29,44 @@ export class TickersProcessingService {
         private readonly qwenService: QwenService
     ) {}
 
-    // async onModuleInit() {
-    //     await this.cron();
-    // }
+    async onModuleInit() {
+        await this.cron();
+    }
 
     @Cron(CronExpression.EVERY_DAY_AT_NOON)
     async cron() {
         const symbols = await this.tickerService.getAll();
 
         for (const symbol of symbols) {
-            const results = await Promise.allSettled([
-                this.analyseSymbol(symbol, TimeframeEnum.OneDay),
-                this.analyseSymbol(symbol, TimeframeEnum.OneWeek)
-            ]);
-            this.logger.log(
-                `Символ ${symbol.name} проанализирован (успешно: ${
-                    results.filter((el) => el.status === "fulfilled").length
-                }/${results.length})`
-            );
+            await this.analyseSymbol(symbol);
         }
     }
 
-    private async analyseSymbol(symbol: TickerResponseDto, timeframe: TimeframeEnum) {
+    private async analyseSymbol(symbol: TickerResponseDto) {
         let marketData: MarketData;
-        let indicators: IndicatorsResponse;
+        let indicators: IndicatorsResponse[];
 
         try {
-            marketData = await this.getMarketData(symbol.name, timeframe);
-            indicators = await this.indicatorsService.getIndicators({
-                symbol: symbol.name,
-                interval: timeframe === TimeframeEnum.OneDay ? "D" : "W",
-                candles: 30
-            });
+            marketData = await this.getMarketData(symbol.name);
+
+            indicators = await Promise.all([
+                this.indicatorsService.getIndicators({
+                    symbol: symbol.name,
+                    interval: "D",
+                    candles: 20
+                }),
+                this.indicatorsService.getIndicators({
+                    symbol: symbol.name,
+                    interval: "W",
+                    candles: 20
+                })
+            ]);
         } catch (err) {
             console.error(err);
             throw err;
         }
 
-        const userContent = `Исторические данные: ${JSON.stringify(marketData)} Индикаторы: ${indicators}. Так же самостоятельно расчитай и другие индикаторы, которые тебе необходимы для полноценного анализа. В ответе их отдавать не нужно`;
+        const userContent = `Исторические данные: ${JSON.stringify(marketData)} Индикаторы: ${JSON.stringify(indicators)}. Так же самостоятельно расчитай и другие индикаторы, которые тебе необходимы для полноценного анализа. В ответе их отдавать не нужно`;
 
         const currentPrice =
             marketData.fifteenMinutes?.at(0)?.close ??
@@ -84,8 +83,8 @@ export class TickersProcessingService {
             {
                 role: "system",
                 content: JSON.stringify({
-                    prompt: getTickerAnalysisPrompt(timeframe, currentPrice),
-                    schema: getTickerAnalysisSchema(timeframe, currentPrice)
+                    prompt: getTickerAnalysisPrompt(currentPrice),
+                    schema: getTickerAnalysisSchema(currentPrice)
                 })
             },
             {
@@ -103,33 +102,38 @@ export class TickersProcessingService {
                     throw new Error("No ai response");
                 }
 
-                const closedAt = new Date(
-                    Date.now() + (timeframe === TimeframeEnum.OneDay ? 1000 * 60 * 60 * 24 : 1000 * 60 * 60 * 24 * 7)
-                );
+                const save = async (timeframe: "oneDay" | "oneWeek") => {
+                    const closedAt = new Date(
+                        Date.now() + (timeframe === "oneDay" ? 1000 * 60 * 60 * 24 : 1000 * 60 * 60 * 24 * 7)
+                    );
 
-                if (!aiResponse.direction || aiResponse.direction === "Nothing") {
-                    return;
-                }
+                    if (!aiResponse[timeframe].direction || aiResponse[timeframe].direction === "Nothing") {
+                        return;
+                    }
 
-                const saveData: CreateTickerProcessingDto = {
-                    stopLoss: aiResponse.stopLoss,
-                    takeProfit: aiResponse.takeProfit,
-                    leverage: aiResponse.leverage,
-                    timeframe,
-                    predictedPrice: aiResponse.predictedPrice,
-                    currentPrice,
-                    tickerId: symbol.id,
-                    direction: aiResponse.direction,
-                    closedAt,
-                    model:
-                        service === this.chatgptService
-                            ? Models.Gpt5
-                            : service === this.deepseekService
-                              ? Models.DeepseekR1T
-                              : Models.Qwen3
+                    const saveData: CreateTickerProcessingDto = {
+                        stopLoss: aiResponse[timeframe].stopLoss,
+                        takeProfit: aiResponse[timeframe].takeProfit,
+                        leverage: aiResponse[timeframe].leverage,
+                        timeframe: timeframe === "oneWeek" ? TimeframeEnum.OneWeek : TimeframeEnum.OneDay,
+                        predictedPrice: aiResponse[timeframe].predictedPrice,
+                        currentPrice,
+                        tickerId: symbol.id,
+                        direction: aiResponse[timeframe].direction,
+                        closedAt,
+                        model:
+                            service === this.chatgptService
+                                ? Models.Gpt5
+                                : service === this.deepseekService
+                                  ? Models.DeepseekR1T
+                                  : Models.Qwen3
+                    };
+
+                    await this.tickerResultsService.create(saveData);
                 };
 
-                await this.tickerResultsService.create(saveData);
+                await save("oneDay");
+                await save("oneWeek");
             } catch (err) {
                 this.logger.error(err.message);
                 throw err;
@@ -137,64 +141,34 @@ export class TickersProcessingService {
         };
 
         const services = [this.chatgptService, this.deepseekService, this.qwenService];
+        const promises = services.map((service) => sendDataToAi(service));
 
-        for (const service of services) {
-            try {
-                await sendDataToAi(service);
-            } catch {
-                /* empty */
-            }
-        }
+        await Promise.all(promises);
     }
 
-    private async getMarketData(symbol: string, timeframe: TimeframeEnum) {
-        let fifteenMinutes: SymbolDataResponseDto[] | undefined;
-        let oneHour: SymbolDataResponseDto[] | undefined;
-        let oneDay: SymbolDataResponseDto[] | undefined;
-        let oneWeek: SymbolDataResponseDto[] | undefined;
-
-        if (timeframe === TimeframeEnum.OneDay) {
-            [fifteenMinutes, oneHour, oneDay, oneWeek] = await Promise.all([
-                this.marketDataService.getSymbolData({
-                    symbol,
-                    candles: 10,
-                    interval: "15"
-                }),
-                this.marketDataService.getSymbolData({
-                    symbol,
-                    candles: 15,
-                    interval: "60"
-                }),
-                this.marketDataService.getSymbolData({
-                    symbol,
-                    candles: 20,
-                    interval: "D"
-                }),
-                this.marketDataService.getSymbolData({
-                    symbol,
-                    candles: 5,
-                    interval: "W"
-                })
-            ]);
-        } else {
-            [oneHour, oneDay, oneWeek] = await Promise.all([
-                this.marketDataService.getSymbolData({
-                    symbol,
-                    candles: 10,
-                    interval: "60"
-                }),
-                this.marketDataService.getSymbolData({
-                    symbol,
-                    candles: 10,
-                    interval: "D"
-                }),
-                this.marketDataService.getSymbolData({
-                    symbol,
-                    candles: 25,
-                    interval: "W"
-                })
-            ]);
-        }
+    private async getMarketData(symbol: string) {
+        const [fifteenMinutes, oneHour, oneDay, oneWeek] = await Promise.all([
+            this.marketDataService.getSymbolData({
+                symbol,
+                candles: 15,
+                interval: "15"
+            }),
+            this.marketDataService.getSymbolData({
+                symbol,
+                candles: 20,
+                interval: "60"
+            }),
+            this.marketDataService.getSymbolData({
+                symbol,
+                candles: 20,
+                interval: "D"
+            }),
+            this.marketDataService.getSymbolData({
+                symbol,
+                candles: 15,
+                interval: "W"
+            })
+        ]);
 
         return {
             fifteenMinutes,
