@@ -76,16 +76,19 @@ export class FiltersTickerResultsDto extends PartialType(
     closedAt?: DateMinMaxFilterDto;
 
     @ApiProperty({ enum: TimeframeEnum })
+    @IsOptional()
     @Contains()
-    timeframe: TimeframeEnum;
+    timeframe?: TimeframeEnum;
 
     @ApiProperty({ enum: DirectionEnum })
+    @IsOptional()
     @Contains()
-    direction: DirectionEnum;
+    direction?: DirectionEnum;
 
     @ApiProperty({ type: Number, isArray: true })
+    @IsOptional()
     @IsNumber({}, { each: true })
-    tickersIds: number[];
+    tickersIds?: number[];
 }
 export class SortsTickerResultsDto extends SortDtoGenerator({
     itemClass: TickerResultsResponseDto,

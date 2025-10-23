@@ -30,6 +30,7 @@ services:
             - "3000:3000"
         command: >
             sh -c "
+                npm run reset
                 npm run migrate:deploy
                 npm run generate
                 npm run seed:deploy
