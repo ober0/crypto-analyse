@@ -30,9 +30,9 @@ export class TickersProcessingService {
         private readonly qwenService: QwenService
     ) {}
 
-    async onModuleInit() {
-        await this.cron();
-    }
+    // async onModuleInit() {
+    //     await this.cron();
+    // }
 
     @Cron(CronExpression.EVERY_DAY_AT_NOON)
     async cron() {
