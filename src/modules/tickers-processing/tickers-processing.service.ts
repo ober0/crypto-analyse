@@ -29,9 +29,9 @@ export class TickersProcessingService {
         private readonly qwenService: QwenService
     ) {}
 
-    // async onModuleInit() {
-    //     await this.cron();
-    // }
+    async onModuleInit() {
+        await this.cron();
+    }
 
     @Cron(CronExpression.EVERY_DAY_AT_NOON)
     async cron() {
@@ -143,7 +143,7 @@ export class TickersProcessingService {
         const services = [this.chatgptService, this.deepseekService, this.qwenService];
         const promises = services.map((service) => sendDataToAi(service));
 
-        await Promise.all(promises);
+        await Promise.allSettled(promises);
     }
 
     private async getMarketData(symbol: string) {
