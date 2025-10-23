@@ -1,7 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { OpenAI } from "openai";
 import { ChatCompletionMessageParam } from "openai/resources";
-import { ChatCompletion } from "openai/src/resources/chat/completions/completions";
 
 @Injectable()
 export class DeepseekService {
@@ -22,7 +21,7 @@ export class DeepseekService {
 
         const start = Date.now();
 
-        let response: ChatCompletion;
+        let response;
         try {
             response = await this.openai.chat.completions.create({
                 model: "tngtech/deepseek-r1t-chimera:free",
