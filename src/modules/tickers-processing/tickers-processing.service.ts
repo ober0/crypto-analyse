@@ -12,6 +12,8 @@ import { MarketDataService } from "../market-data/market-data.service";
 import { TickerAnalysis } from "./types/ai-response";
 import { TickerResultsService } from "../ticker-results/ticker-results.service";
 import { CreateTickerProcessingDto } from "../ticker-results/types";
+import { IndicatorsResponse } from "../custom-indicators/dto/index.dto";
+import { CustomIndicatorsService } from "../custom-indicators/custom-indicators.service";
 
 @Injectable()
 export class TickersProcessingService {
@@ -20,7 +22,8 @@ export class TickersProcessingService {
         private readonly tickerService: TickersService,
         private readonly chatgptService: ChatgptService,
         private readonly marketDataService: MarketDataService,
-        private readonly tickerResultsService: TickerResultsService
+        private readonly tickerResultsService: TickerResultsService,
+        private readonly indicatorsService: CustomIndicatorsService
     ) {}
 
     // async onModuleInit() {
@@ -45,9 +48,22 @@ export class TickersProcessingService {
     }
 
     private async analyseSymbol(symbol: TickerResponseDto, timeframe: TimeframeEnum) {
-        const marketData: MarketData = await this.getMarketData(symbol.name, timeframe);
+        let marketData: MarketData;
+        let indicators: IndicatorsResponse;
 
-        const userContent = `Исторические данные: ${JSON.stringify(marketData)}`;
+        try {
+            marketData = await this.getMarketData(symbol.name, timeframe);
+            indicators = await this.indicatorsService.getIndicators({
+                symbol: symbol.name,
+                interval: timeframe === TimeframeEnum.OneDay ? "D" : "W",
+                candles: 30
+            });
+        } catch (err) {
+            console.error(err);
+            throw err;
+        }
+        console.log(JSON.stringify(indicators));
+        const userContent = `Исторические данные: ${JSON.stringify(marketData)} Индикаторы: ${indicators}. Так же самостоятельно расчитай и другие индикаторы, которые тебе необходимы для полноценного анализа. В ответе их отдавать не нужно`;
 
         const prompt: ChatCompletionMessageParam[] = [
             {
@@ -65,7 +81,6 @@ export class TickersProcessingService {
 
         try {
             const aiResponse: TickerAnalysis | null = await this.chatgptService.sendMessageToAi(prompt);
-            console.log(aiResponse);
             if (!aiResponse) {
                 throw new Error("No ai response");
             }

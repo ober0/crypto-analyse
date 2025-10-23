@@ -45,7 +45,7 @@ export class MarketDataService {
 
 export function formatKlineData(klineData: OHLCVKlineV5[]): SymbolDataResponseDto[] {
     return klineData.map((entry) => ({
-        time: new Date(entry[0]),
+        time: new Date(Number(entry[0])),
         open: Number(entry[1]),
         high: Number(entry[2]),
         low: Number(entry[3]),
