@@ -11,9 +11,9 @@ export class TickersCloseProcessingService {
         private readonly tickerResultsService: TickerResultsService
     ) {}
 
-    async onModuleInit() {
-        await this.cron();
-    }
+    // async onModuleInit() {
+    //     await this.cron();
+    // }
 
     @Cron("0 13 * * *")
     async cron() {
@@ -37,9 +37,9 @@ export class TickersCloseProcessingService {
 
                 const realPrice = tickerData.at(0)!.close;
 
-                const difference = realPrice - ticker.predictedPrice;
-                const leverageDifference = difference * (ticker.leverage ?? 1);
-                const percentDifference = (difference / ticker.predictedPrice) * 100;
+                const difference = Number((realPrice - ticker.predictedPrice).toFixed(3));
+                const leverageDifference = Number((difference * (ticker.leverage ?? 1)).toFixed(3));
+                const percentDifference = Number(((difference / ticker.predictedPrice) * 100).toFixed(3));
 
                 await this.tickerResultsService.update(ticker.id, {
                     realPrice,
