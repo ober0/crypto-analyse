@@ -15,7 +15,9 @@ export class TickersCloseProcessingService {
     //     await this.cron();
     // }
 
-    @Cron("0 13 * * *")
+    @Cron("0 1 * * *", {
+        timeZone: "Europe/Moscow"
+    })
     async cron() {
         const tickerPreprocessing = await this.tickerResultsService.findAllByWhere({
             isClosed: false,

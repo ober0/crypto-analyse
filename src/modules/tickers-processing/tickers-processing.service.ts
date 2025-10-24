@@ -33,7 +33,9 @@ export class TickersProcessingService {
     //     await this.cron();
     // }
 
-    @Cron("15 12 * * *")
+    @Cron("0 0 * * *", {
+        timeZone: "Europe/Moscow"
+    })
     async cron() {
         const symbols = await this.tickerService.getAll();
 

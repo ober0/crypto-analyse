@@ -61,15 +61,20 @@ export class QwenService {
                     ${seconds.toString().padStart(2, "0")}`
                 : `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 
-        this.logger.log(
-            `Ответ от ИИ qwen получен. Символов: ${JSON.stringify(response.choices[0].message.content).length} 
-                Времени: ${processTime}`
-        );
-
         let parsed: T;
         try {
+            this.logger.log(
+                `Ответ от ИИ qwen получен. Символов: ${JSON.stringify(response.choices[0].message.content).length} 
+                Времени: ${processTime}`
+            );
+
             parsed = JSON.parse(response.choices[0].message.content!);
-        } catch {
+        } catch (err) {
+            this.logger.error(
+                `Ответ от ИИ qwen получен с ошибкой: ${err.message}
+                Времени: ${processTime}`
+            );
+
             return null;
         }
 

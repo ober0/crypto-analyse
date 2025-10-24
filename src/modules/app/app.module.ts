@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
 
 import { PrismaModule } from "../prisma/prisma.module";
 import { ConfigModule } from "@nestjs/config";
@@ -11,6 +11,7 @@ import { TickersProcessingModule } from "../tickers-processing/tickers-processin
 import { DeepseekModule } from "../deepseek/deepseek.module";
 import { QwenModule } from "../qwen/qwen.module";
 import { ScheduleModule } from "@nestjs/schedule";
+import { LoggerMiddleware } from "../../logger/logger.middleware";
 
 @Module({
     imports: [
@@ -27,4 +28,8 @@ import { ScheduleModule } from "@nestjs/schedule";
         QwenModule
     ]
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+    configure(consumer: MiddlewareConsumer) {
+        consumer.apply(LoggerMiddleware).forRoutes("*path");
+    }
+}
