@@ -7,9 +7,10 @@ import { TickerResultsModule } from "../ticker-results/ticker-results.module";
 import { CustomIndicatorsModule } from "../custom-indicators/custom-indicators.module";
 import { DeepseekModule } from "../deepseek/deepseek.module";
 import { QwenModule } from "../qwen/qwen.module";
+import { TickersCloseProcessingService } from "./tickers-close-processing.service";
 
 @Module({
-    providers: [TickersProcessingService],
+    providers: [TickersProcessingService, TickersCloseProcessingService],
     imports: [
         TickersModule,
         ChatgptModule,

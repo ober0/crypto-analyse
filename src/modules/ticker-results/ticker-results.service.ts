@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { TickerResultsRepository } from "./ticker-results.repository";
 import { CreateTickerProcessingDto, TickerResultsResponse, UpdateTickerProcessingDto } from "./types";
 import { SearchTickerResultsDto, TickerResultsResponseDto, TickerResultsSearchResponseDto } from "./types/search";
+import { Prisma } from "@prisma/client";
 
 @Injectable()
 export class TickerResultsService {
@@ -22,5 +23,9 @@ export class TickerResultsService {
             data,
             count
         };
+    }
+
+    async findAllByWhere(where: Prisma.TickerProcessingWhereInput): Promise<TickerResultsResponse[]> {
+        return this.repository.findAllByWhere(where);
     }
 }

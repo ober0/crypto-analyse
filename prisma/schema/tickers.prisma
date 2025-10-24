@@ -54,5 +54,6 @@ model TickerProcessing {
   closedAt  DateTime?
   createdAt DateTime  @default(now())
 
+  @@index([isClosed])
   @@map("ticker_processing")
 }

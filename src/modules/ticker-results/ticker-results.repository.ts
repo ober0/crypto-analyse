@@ -69,4 +69,13 @@ export class TickerResultsRepository {
             where: this.buildWhere(dto)
         });
     }
+
+    async findAllByWhere(where: Prisma.TickerProcessingWhereInput): Promise<TickerResultsResponse[]> {
+        return this.prisma.tickerProcessing.findMany({
+            where,
+            include: {
+                ticker: true
+            }
+        });
+    }
 }
