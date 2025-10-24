@@ -33,7 +33,7 @@ export class TickersProcessingService {
     //     await this.cron();
     // }
 
-    @Cron(CronExpression.EVERY_DAY_AT_NOON)
+    @Cron("15 12 * * *")
     async cron() {
         const symbols = await this.tickerService.getAll();
 

@@ -10,11 +10,13 @@ import { TickerResultsModule } from "../ticker-results/ticker-results.module";
 import { TickersProcessingModule } from "../tickers-processing/tickers-processing.module";
 import { DeepseekModule } from "../deepseek/deepseek.module";
 import { QwenModule } from "../qwen/qwen.module";
+import { ScheduleModule } from "@nestjs/schedule";
 
 @Module({
     imports: [
         PrismaModule,
         ConfigModule.forRoot({ isGlobal: true }),
+        ScheduleModule.forRoot(),
         UserModule,
         AuthModule,
         TickersModule,
