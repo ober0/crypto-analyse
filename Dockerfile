@@ -25,6 +25,8 @@ COPY --from=build /opt/app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=build /opt/app/prisma/schema ./prisma/schema
 COPY --from=build /opt/app/dist/main.js ./dist/main.js
 COPY --from=build /opt/app/dist/prisma/seeds ./dist/prisma/seeds
+COPY --from=build /opt/app/dist/src/data-migrations ./dist
+
 
 
 
