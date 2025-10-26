@@ -12,7 +12,6 @@
 -- AlterTable
 ALTER TABLE "ticker_processing" DROP COLUMN "leverageDifference",
 DROP COLUMN "percentDifference",
-ADD COLUMN     "pnl" DOUBLE PRECISION NOT NULL,
-ADD COLUMN     "unrealizedDifference" DOUBLE PRECISION NOT NULL,
-ADD COLUMN     "unrealizedPnl" DOUBLE PRECISION NOT NULL,
-ALTER COLUMN "difference" SET NOT NULL;
+ADD COLUMN     "pnl" DOUBLE PRECISION,
+ADD COLUMN     "unrealizedDifference" DOUBLE PRECISION,
+ADD COLUMN     "unrealizedPnl" DOUBLE PRECISION
