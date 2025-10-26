@@ -14,10 +14,11 @@ export type CreateTickerProcessingDto = {
 };
 
 export type UpdateTickerProcessingDto = {
-    realPrice?: number | null;
-    difference?: number | null;
-    leverageDifference?: number | null;
-    percentDifference?: number | null;
+    realPrice?: number;
+    difference?: number;
+    unrealizedDifference?: number;
+    pnl?: number;
+    unrealizedPnl?: number;
     isClosed?: boolean;
 };
 

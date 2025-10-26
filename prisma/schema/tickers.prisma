@@ -46,9 +46,10 @@ model TickerProcessing {
   predictedPrice Float
   realPrice      Float?
 
-  difference         Float?
-  leverageDifference Float?
-  percentDifference  Float?
+  difference           Float?
+  unrealizedDifference Float?
+  pnl                  Float?
+  unrealizedPnl        Float?
 
   isClosed  Boolean   @default(false)
   closedAt  DateTime?

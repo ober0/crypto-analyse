@@ -39,15 +39,30 @@ export class TickersCloseProcessingService {
 
                 const realPrice = tickerData.at(0)!.close;
 
-                const difference = Number((realPrice - ticker.predictedPrice).toFixed(3));
-                const leverageDifference = Number((difference * (ticker.leverage ?? 1)).toFixed(3));
-                const percentDifference = Number(((difference / ticker.predictedPrice) * 100).toFixed(3));
+                const direction = ticker.direction;
+
+                let resultPredicted: number;
+
+                if (direction === "Long") {
+                    resultPredicted = Math.min(realPrice, ticker.predictedPrice);
+                } else {
+                    resultPredicted = Math.max(realPrice, ticker.predictedPrice);
+                }
+
+                const difference =
+                    Number((resultPredicted - ticker.currentPrice).toFixed(4)) * (direction === "Long" ? 1 : -1);
+                const unrealizedDifference =
+                    Number((realPrice - ticker.currentPrice).toFixed(4)) * (direction === "Long" ? 1 : -1);
+
+                const pnl = Number(((difference / ticker.currentPrice) * 100).toFixed(2));
+                const unrealizedPnl = Number(((unrealizedDifference / ticker.currentPrice) * 100).toFixed(2));
 
                 await this.tickerResultsService.update(ticker.id, {
                     realPrice,
                     difference,
-                    leverageDifference,
-                    percentDifference,
+                    unrealizedDifference,
+                    pnl,
+                    unrealizedPnl,
                     isClosed: true
                 });
             })

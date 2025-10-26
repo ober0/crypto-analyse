@@ -1,6 +1,6 @@
 import { SearchBaseDto } from "@app/common-dto/base-search.dto";
 import { IsArray, IsNumber, isNumber, IsOptional, IsString, ValidateNested } from "class-validator";
-import { ApiProperty, OmitType, PartialType } from "@nestjs/swagger";
+import { ApiProperty, OmitType, PartialType, PickType } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import { CommonSearchResponseDto } from "@app/common-dto/search-response.dto";
 import { DirectionEnum, Models, TimeframeEnum } from "@prisma/client";
@@ -42,14 +42,17 @@ export class TickerResultsResponseDto {
     @ApiProperty({ required: false, type: Number })
     realPrice?: number | null;
 
-    @ApiProperty({ required: false, type: Number })
-    difference?: number | null;
+    @ApiProperty()
+    difference: number | null;
 
-    @ApiProperty({ required: false, type: Number })
-    leverageDifference?: number | null;
+    @ApiProperty()
+    unrealizedDifference: number | null;
 
-    @ApiProperty({ required: false, type: Number })
-    percentDifference?: number | null;
+    @ApiProperty()
+    pnl: number | null;
+
+    @ApiProperty()
+    unrealizedPnl: number | null;
 
     @ApiProperty()
     isClosed: boolean;
@@ -66,24 +69,23 @@ export class TickerResultsResponseDto {
     ticker: Ticker;
 }
 
-export class FiltersTickerResultsDto extends PartialType(
-    OmitType(TickerResultsResponseDto, ["id", "tickersId", "createdAt", "closedAt", "ticker", "timeframe", "direction"])
-) {
+export class FiltersTickerResultsDto extends PartialType(PickType(TickerResultsResponseDto, ["isClosed"])) {
     @ApiProperty({ type: DateMinMaxFilterDto })
     @IsOptional()
     @ValidateNested()
     @Type(() => DateMinMaxFilterDto)
     closedAt?: DateMinMaxFilterDto;
 
+    @ApiProperty({ type: DateMinMaxFilterDto })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => DateMinMaxFilterDto)
+    createdAt?: DateMinMaxFilterDto;
+
     @ApiProperty({ enum: TimeframeEnum })
     @IsOptional()
     @Contains()
     timeframe?: TimeframeEnum;
-
-    @ApiProperty({ enum: DirectionEnum })
-    @IsOptional()
-    @Contains()
-    direction?: DirectionEnum;
 
     @ApiProperty({ enum: Models })
     @IsOptional()
@@ -97,15 +99,7 @@ export class FiltersTickerResultsDto extends PartialType(
 }
 export class SortsTickerResultsDto extends SortDtoGenerator({
     itemClass: TickerResultsResponseDto,
-    includedValue: [
-        "percentDifference",
-        "difference",
-        "percentDifference",
-        "direction",
-        "isClosed",
-        "closedAt",
-        "createdAt"
-    ]
+    includedValue: ["pnl", "unrealizedPnl", "closedAt", "createdAt", "isClosed"]
 }) {}
 
 export class SearchTickerResultsDto extends SearchBaseDto<FiltersTickerResultsDto, SortsTickerResultsDto> {
