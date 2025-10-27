@@ -12,6 +12,7 @@ import { DeepseekModule } from "../deepseek/deepseek.module";
 import { QwenModule } from "../qwen/qwen.module";
 import { ScheduleModule } from "@nestjs/schedule";
 import { LoggerMiddleware } from "../../logger/logger.middleware";
+import { StatisticsModule } from "../statistics/statistics.module";
 
 @Module({
     imports: [
@@ -25,7 +26,8 @@ import { LoggerMiddleware } from "../../logger/logger.middleware";
         TickerResultsModule,
         TickersProcessingModule,
         DeepseekModule,
-        QwenModule
+        QwenModule,
+        StatisticsModule
     ]
 })
 export class AppModule implements NestModule {
