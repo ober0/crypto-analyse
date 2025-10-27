@@ -1,5 +1,8 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { Models, TimeframeEnum } from "@prisma/client";
+import { TickerResponseDto } from "../../tickers/dto/response.dto";
+import { Validate, ValidateNested } from "class-validator";
+import { Type } from "class-transformer";
 
 class AvgDto {
     @ApiProperty({ type: Number })
@@ -46,6 +49,11 @@ class GroupByDto {
 
     @ApiProperty({ required: false })
     tickerId?: number;
+
+    @ApiProperty({ type: TickerResponseDto, required: false })
+    @ValidateNested()
+    @Type(() => TickerResponseDto)
+    ticker?: TickerResponseDto;
 }
 
 export class StatisticsResponseDto {

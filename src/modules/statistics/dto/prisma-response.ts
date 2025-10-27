@@ -17,5 +17,5 @@ export class PrismaResponse {
     };
     model?: Models;
     timeframe?: TimeframeEnum;
-    tickerId?: number;
+    tickersId?: number;
 }

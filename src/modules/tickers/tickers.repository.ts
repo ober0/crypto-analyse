@@ -16,4 +16,19 @@ export class TickersRepository {
             }
         });
     }
+
+    async findOneById(tickersId: number) {
+        return this.prisma.tickers.findFirst({
+            where: {
+                id: tickersId
+            },
+            include: {
+                _count: {
+                    select: {
+                        tickerProcessing: true
+                    }
+                }
+            }
+        });
+    }
 }
