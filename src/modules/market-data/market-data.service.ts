@@ -11,8 +11,8 @@ export class MarketDataService {
     async getSymbolData(dto: GetSymbolDataDto): Promise<SymbolDataResponseDto[]> {
         const { symbol, candles, interval } = dto;
         const result: SymbolDataResponseDto[] = [];
-        let startTimestamp = Math.floor(Date.now() / 1000);
         const limit = 1000;
+        let endTimestamp = new Date().getTime();
 
         while (result.length < candles) {
             const response = await this.httpClient
@@ -20,7 +20,7 @@ export class MarketDataService {
                     category: "spot",
                     symbol,
                     interval,
-                    start: startTimestamp,
+                    end: endTimestamp,
                     limit: Math.min(limit, candles - result.length)
                 })
                 .catch((err) => {
@@ -36,7 +36,7 @@ export class MarketDataService {
             const formatted = formatKlineData(klineList);
             result.push(...formatted);
 
-            startTimestamp = Number(klineList[klineList.length - 1][0] + 1);
+            endTimestamp = Number(klineList[klineList.length - 1][0] + 1);
         }
 
         return result.slice(0, candles);
