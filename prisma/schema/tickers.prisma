@@ -50,6 +50,7 @@ model TickerProcessing {
   unrealizedDifference Float?
   pnl                  Float?
   unrealizedPnl        Float?
+  isPredictAchieved    Boolean?
 
   isClosed  Boolean   @default(false)
   closedAt  DateTime?

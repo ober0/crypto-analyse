@@ -20,6 +20,7 @@ export type UpdateTickerProcessingDto = {
     pnl?: number;
     unrealizedPnl?: number;
     isClosed?: boolean;
+    isPredictAchieved?: boolean;
 };
 
 export type TickerResultsResponse = TickerProcessing & { ticker: Tickers };
