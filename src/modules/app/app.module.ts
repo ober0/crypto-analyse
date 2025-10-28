@@ -9,10 +9,10 @@ import { ChatgptModule } from "../chatgpt/chatgpt.module";
 import { TickerResultsModule } from "../ticker-results/ticker-results.module";
 import { TickersProcessingModule } from "../tickers-processing/tickers-processing.module";
 import { DeepseekModule } from "../deepseek/deepseek.module";
-import { QwenModule } from "../qwen/qwen.module";
 import { ScheduleModule } from "@nestjs/schedule";
 import { LoggerMiddleware } from "../../logger/logger.middleware";
 import { StatisticsModule } from "../statistics/statistics.module";
+import { LlamaModule } from "../llama/llama.module";
 
 @Module({
     imports: [
@@ -26,7 +26,7 @@ import { StatisticsModule } from "../statistics/statistics.module";
         TickerResultsModule,
         TickersProcessingModule,
         DeepseekModule,
-        QwenModule,
+        LlamaModule,
         StatisticsModule
     ]
 })

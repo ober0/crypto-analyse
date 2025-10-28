@@ -26,6 +26,7 @@ enum Models {
   Gpt5
   DeepseekR1T
   Qwen3
+  Llama4
 }
 
 model TickerProcessing {

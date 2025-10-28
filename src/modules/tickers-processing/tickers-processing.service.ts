@@ -14,7 +14,7 @@ import { CreateTickerProcessingDto } from "../ticker-results/types";
 import { IndicatorsResponse } from "../custom-indicators/dto/index.dto";
 import { CustomIndicatorsService } from "../custom-indicators/custom-indicators.service";
 import { DeepseekService } from "../deepseek/deepseek.service";
-import { QwenService } from "../qwen/qwen.service";
+import { LlamaService } from "../llama/llama.service";
 
 @Injectable()
 export class TickersProcessingService {
@@ -26,7 +26,7 @@ export class TickersProcessingService {
         private readonly tickerResultsService: TickerResultsService,
         private readonly indicatorsService: CustomIndicatorsService,
         private readonly deepseekService: DeepseekService,
-        private readonly qwenService: QwenService
+        private readonly llamaService: LlamaService
     ) {}
 
     // async onModuleInit() {
@@ -96,7 +96,7 @@ export class TickersProcessingService {
         ];
 
         const sendDataToAi = async (
-            service: typeof this.chatgptService | typeof this.deepseekService | typeof this.qwenService
+            service: typeof this.chatgptService | typeof this.deepseekService | typeof this.llamaService
         ) => {
             try {
                 const aiResponse: TickerAnalysis | null = await service.sendMessageToAi<TickerAnalysis>(prompt);
@@ -128,7 +128,7 @@ export class TickersProcessingService {
                                 ? Models.Gpt5
                                 : service === this.deepseekService
                                   ? Models.DeepseekR1T
-                                  : Models.Qwen3
+                                  : Models.Llama4
                     };
 
                     await this.tickerResultsService.create(saveData);
@@ -142,7 +142,7 @@ export class TickersProcessingService {
             }
         };
 
-        const services = [this.chatgptService, this.deepseekService, this.qwenService];
+        const services = [this.chatgptService, this.deepseekService, this.llamaService];
         const promises = services.map((service) => sendDataToAi(service));
 
         await Promise.allSettled(promises);
