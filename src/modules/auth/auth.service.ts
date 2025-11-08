@@ -63,11 +63,6 @@ export class AuthService {
 
         const { refreshToken, accessToken } = this.generateTokens(user);
 
-        const existing = await this.authRepository.findUserToken(user.id);
-        if (existing?.id) {
-            await this.authRepository.deleteToken(existing.id);
-        }
-
         await this.authRepository.saveToken({ userId: user.id, refreshToken });
 
         const { password, ...restUser } = user;
