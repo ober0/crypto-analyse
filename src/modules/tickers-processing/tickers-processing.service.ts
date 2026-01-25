@@ -142,7 +142,9 @@ export class TickersProcessingService {
             }
         };
 
-        const services = [this.chatgptService, this.deepseekService, this.llamaService];
+        // FIXME gpt тут
+        const services = [this.deepseekService, this.llamaService];
+        // const services = [this.chatgptService, this.deepseekService, this.llamaService];
         const promises = services.map((service) => sendDataToAi(service));
 
         await Promise.allSettled(promises);
