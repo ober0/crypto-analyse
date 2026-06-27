@@ -1,0 +1,147 @@
+enum ProcessingInterval {
+  OneDay
+  OneWeek
+  OneMonth
+
+  @@map("processing_interval")
+}
+
+enum ProcessingStatus {
+  Ready
+  Active
+  InOrder
+  Error
+  End
+
+  @@map("processing_status")
+}
+
+model AiProcessing {
+  id Int @id @default(autoincrement())
+
+  user   User @relation(fields: [userId], references: [id])
+  userId Int
+
+  ticker    Tickers @relation(fields: [tickersId], references: [id])
+  tickersId Int
+
+  checkIntervalMins Int
+
+  startAt  DateTime
+  endAt    DateTime
+  interval ProcessingInterval
+
+  customPrompt String
+
+  withWebSearch Boolean @default(true)
+
+  status ProcessingStatus
+
+  createdAt DateTime
+
+  @@map("ai_processing")
+}
+
+enum TradeStatus {
+  Open
+  Closed
+
+  @@map("trade_status")
+}
+
+enum TradeDirection {
+  Long
+  Short
+
+  @@map("trade_direction")
+}
+
+enum TradeActionType {
+  Open
+  Buy
+  Sell
+  Partial_close
+  Change_leverage
+  Change_stop_loss
+  Change_take_profit
+  Close
+
+  @@map("trade_action_type")
+}
+
+enum TradeCloseReason {
+  Signal
+  Sl
+  Tp
+
+  @@map("trade_close_reason")
+}
+
+model Trade {
+  id Int @id @default(autoincrement())
+
+  tickerId Int
+  ticker   Tickers @relation(fields: [tickerId], references: [id])
+
+  direction TradeDirection
+
+  status TradeStatus @default(Open)
+
+  currentSize Decimal @db.Decimal(32, 16)
+
+  averageEntryPrice Decimal @db.Decimal(32, 16)
+
+  currentLeverage Float
+
+  stopLoss Decimal? @db.Decimal(32, 16)
+
+  takeProfit Decimal? @db.Decimal(32, 16)
+
+  pnl Decimal? @db.Decimal(32, 16)
+
+  closeReason TradeCloseReason?
+
+  openedAt DateTime  @default(now())
+  closedAt DateTime?
+
+  openDescription  String?
+  closeDescription String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  actions TradeAction[]
+
+  @@index([status])
+  @@index([tickerId])
+  @@map("trade")
+}
+
+model TradeAction {
+  id Int @id @default(autoincrement())
+
+  tradeId Int
+  trade   Trade @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
+  type TradeActionType
+
+  quantity Decimal? @db.Decimal(32, 16)
+
+  price Decimal? @db.Decimal(32, 16)
+
+  leverage Float?
+
+  stopLoss Decimal? @db.Decimal(32, 16)
+
+  takeProfit Decimal? @db.Decimal(32, 16)
+
+  realizedPnl Decimal? @db.Decimal(32, 16)
+
+  comment String?
+
+  createdAt DateTime @default(now())
+
+  @@index([tradeId])
+  @@index([type])
+  @@map("trade_action")
+}

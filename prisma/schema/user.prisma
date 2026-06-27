@@ -12,6 +12,8 @@ model User {
   refreshToken RefreshToken[] @relation(map: "refresh_token")
   isActive     Boolean        @default(true) @map("is_active")
 
+  aiProcessing AiProcessing[]
+
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("user")

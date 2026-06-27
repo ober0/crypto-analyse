@@ -1,8 +1,11 @@
 model Tickers {
   id Int @id @default(autoincrement())
 
-  name             String
+  name String
+
+  aiProcessing     AiProcessing[]
   tickerProcessing TickerProcessing[]
+  Trade            Trade[]
 
   @@map("tickers")
 }
