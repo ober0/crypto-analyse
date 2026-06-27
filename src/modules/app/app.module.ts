@@ -11,6 +11,7 @@ import { ScheduleModule } from "@nestjs/schedule";
 import { LoggerMiddleware } from "../../logger/logger.middleware";
 import { StatisticsModule } from "../statistics/statistics.module";
 import { AiModule } from "../ai/ai.module";
+import { AiProcessingModule } from "../ai-processing/ai-processing.module";
 
 @Module({
     imports: [
@@ -23,7 +24,8 @@ import { AiModule } from "../ai/ai.module";
         TickerResultsModule,
         TickersProcessingModule,
         StatisticsModule,
-        AiModule
+        AiModule,
+        AiProcessingModule
     ]
 })
 export class AppModule implements NestModule {

@@ -27,11 +27,11 @@ model AiProcessing {
 
   checkIntervalMins Int
 
-  startAt  DateTime
-  endAt    DateTime
+  startAt  DateTime?
+  endAt    DateTime?
   interval ProcessingInterval
 
-  customPrompt String
+  customPrompt String?
 
   withWebSearch Boolean @default(true)
 
