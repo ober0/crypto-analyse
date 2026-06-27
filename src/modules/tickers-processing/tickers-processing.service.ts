@@ -1,32 +1,29 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { Cron, CronExpression } from "@nestjs/schedule";
+import { Cron } from "@nestjs/schedule";
 import { TickersService } from "../tickers/tickers.service";
 import { Models, TimeframeEnum } from "@prisma/client";
 import { TickerResponseDto } from "../tickers/dto/response.dto";
-import { ChatCompletionMessageParam } from "openai/resources";
-import { getTickerAnalysisPrompt, getTickerAnalysisSchema } from "./cfg/prompt";
-import { ChatgptService } from "../chatgpt/chatgpt.service";
 import { MarketData } from "./types/market-data";
 import { MarketDataService } from "../market-data/market-data.service";
-import { TickerAnalysis } from "./types/ai-response";
 import { TickerResultsService } from "../ticker-results/ticker-results.service";
 import { CreateTickerProcessingDto } from "../ticker-results/types";
 import { IndicatorsResponse } from "../custom-indicators/dto/index.dto";
 import { CustomIndicatorsService } from "../custom-indicators/custom-indicators.service";
-import { DeepseekService } from "../deepseek/deepseek.service";
-import { LlamaService } from "../llama/llama.service";
+import { OpenAiToModelsMap } from "../ai/models/models";
+import { BaseMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
+import { getTickerAnalysisPrompt } from "../ai/prompts/ticker-analyse";
+import { tickerAnalyseFormatInstructions, tickerAnalyseParser } from "../ai/response-schemas/ticker-analyse";
+import { AiService } from "../ai/ai.service";
 
 @Injectable()
 export class TickersProcessingService {
     private readonly logger: Logger = new Logger("TickersProcessingService");
     constructor(
         private readonly tickerService: TickersService,
-        private readonly chatgptService: ChatgptService,
         private readonly marketDataService: MarketDataService,
         private readonly tickerResultsService: TickerResultsService,
         private readonly indicatorsService: CustomIndicatorsService,
-        private readonly deepseekService: DeepseekService,
-        private readonly llamaService: LlamaService
+        private readonly aiService: AiService
     ) {}
 
     // async onModuleInit() {
@@ -81,28 +78,23 @@ export class TickersProcessingService {
             throw new Error("No currentPrice");
         }
 
-        const prompt: ChatCompletionMessageParam[] = [
-            {
-                role: "system",
-                content: JSON.stringify({
-                    prompt: getTickerAnalysisPrompt(currentPrice),
-                    schema: getTickerAnalysisSchema(currentPrice)
-                })
-            },
-            {
-                role: "user",
-                content: userContent
-            }
+        const prompt: BaseMessage[] = [
+            new SystemMessage(JSON.stringify(getTickerAnalysisPrompt(currentPrice))),
+            new SystemMessage(tickerAnalyseFormatInstructions),
+            new HumanMessage(userContent)
         ];
 
-        const sendDataToAi = async (
-            service: typeof this.chatgptService | typeof this.deepseekService | typeof this.llamaService
-        ) => {
+        const sendDataToAi = async (model: Models) => {
             try {
-                const aiResponse: TickerAnalysis | null = await service.sendMessageToAi<TickerAnalysis>(prompt);
-                if (!aiResponse) {
-                    throw new Error("No ai response");
+                const modelOpenAi = OpenAiToModelsMap.get(model);
+
+                if (!modelOpenAi) {
+                    return;
                 }
+
+                const response = await this.aiService.request(prompt, modelOpenAi, tickerAnalyseParser);
+
+                const aiResponse = response.data;
 
                 const save = async (timeframe: "oneDay" | "oneWeek") => {
                     const closedAt = new Date(
@@ -123,29 +115,22 @@ export class TickersProcessingService {
                         tickerId: symbol.id,
                         direction: aiResponse[timeframe].direction,
                         closedAt,
-                        model:
-                            service === this.chatgptService
-                                ? Models.Gpt5
-                                : service === this.deepseekService
-                                  ? Models.DeepseekR1T
-                                  : Models.Llama4
+                        model,
+                        usage: response.metadata.tokenUsage
                     };
 
                     await this.tickerResultsService.create(saveData);
                 };
 
-                await save("oneDay");
-                await save("oneWeek");
+                await Promise.all([save("oneDay"), save("oneWeek")]);
             } catch (err) {
                 this.logger.error(err.message);
                 throw err;
             }
         };
 
-        // FIXME gpt тут
-        const services = [this.deepseekService, this.llamaService];
-        // const services = [this.chatgptService, this.deepseekService, this.llamaService];
-        const promises = services.map((service) => sendDataToAi(service));
+        const models = Object.values(Models);
+        const promises = models.map((model) => sendDataToAi(model));
 
         await Promise.allSettled(promises);
     }

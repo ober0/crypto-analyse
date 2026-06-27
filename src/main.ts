@@ -7,7 +7,7 @@ import cookieParser from "cookie-parser";
 
 async function bootstrap() {
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
-    const name: string = "base-template";
+    const name: string = "autotrading";
 
     app.set("trust proxy", true);
     app.setGlobalPrefix("api");

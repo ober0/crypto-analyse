@@ -12,22 +12,34 @@ export class TickerResultsRepository {
     constructor(private readonly prisma: PrismaService) {}
 
     async create(data: CreateTickerProcessingDto): Promise<TickerResultsResponse> {
-        return this.prisma.tickerProcessing.create({
-            data: {
-                tickersId: data.tickerId,
-                timeframe: data.timeframe,
-                direction: data.direction,
-                leverage: data.leverage,
-                stopLoss: data.stopLoss,
-                takeProfit: data.takeProfit,
-                currentPrice: data.currentPrice,
-                predictedPrice: data.predictedPrice,
-                model: data.model,
-                closedAt: data.closedAt
-            },
-            include: {
-                ticker: true
-            }
+        return this.prisma.$transaction(async (tx) => {
+            const usage = await tx.usage.create({
+                data: {
+                    model: data.model,
+                    prompt: data.usage.promptTokens ?? 0,
+                    response: data.usage.completionTokens ?? 0
+                }
+            });
+
+            return tx.tickerProcessing.create({
+                data: {
+                    tickersId: data.tickerId,
+                    timeframe: data.timeframe,
+                    direction: data.direction,
+                    leverage: data.leverage,
+                    stopLoss: data.stopLoss,
+                    takeProfit: data.takeProfit,
+                    currentPrice: data.currentPrice,
+                    predictedPrice: data.predictedPrice,
+                    model: data.model,
+                    closedAt: data.closedAt,
+                    usageId: usage.id
+                },
+                include: {
+                    ticker: true,
+                    usage: true
+                }
+            });
         });
     }
 
@@ -37,7 +49,8 @@ export class TickerResultsRepository {
             where: { id },
             data,
             include: {
-                ticker: true
+                ticker: true,
+                usage: true
             }
         });
     }
@@ -59,7 +72,8 @@ export class TickerResultsRepository {
             orderBy: mapSort(dto.sorts),
             ...mapPagination(dto.pagination),
             include: {
-                ticker: true
+                ticker: true,
+                usage: true
             }
         });
     }
@@ -74,7 +88,8 @@ export class TickerResultsRepository {
         return this.prisma.tickerProcessing.findMany({
             where,
             include: {
-                ticker: true
+                ticker: true,
+                usage: true
             }
         });
     }

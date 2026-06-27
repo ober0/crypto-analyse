@@ -11,6 +11,23 @@ import { TickerResponseDto } from "../../tickers/dto/response.dto";
 
 class Ticker extends OmitType(TickerResponseDto, ["processCount"]) {}
 
+export class UsageResponse {
+    @ApiProperty()
+    id: number;
+
+    @ApiProperty({ enum: Models })
+    model: Models;
+
+    @ApiProperty()
+    response: number;
+
+    @ApiProperty()
+    prompt: number;
+
+    @ApiProperty()
+    createdAt: Date;
+}
+
 export class TickerResultsResponseDto {
     @ApiProperty()
     id: number;
@@ -67,6 +84,14 @@ export class TickerResultsResponseDto {
     @ValidateNested()
     @Type(() => Ticker)
     ticker: Ticker;
+
+    @ApiProperty({ type: UsageResponse })
+    @ValidateNested()
+    @Type(() => UsageResponse)
+    usage: UsageResponse;
+
+    @ApiProperty()
+    usageId: number;
 }
 
 export class FiltersTickerResultsDto extends PartialType(PickType(TickerResultsResponseDto, ["isClosed"])) {
