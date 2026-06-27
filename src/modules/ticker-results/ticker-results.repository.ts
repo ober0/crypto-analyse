@@ -93,4 +93,25 @@ export class TickerResultsRepository {
             }
         });
     }
+    async getUsageByModel() {
+        const data = await this.prisma.usage.groupBy({
+            where: {
+                tickerProcessing: {
+                    isNot: null
+                }
+            },
+            by: ["model"],
+            _sum: {
+                prompt: true,
+                response: true
+            }
+        });
+
+        return data.map((x) => ({
+            model: x.model,
+            prompt: x._sum.prompt ?? 0,
+            response: x._sum.response ?? 0,
+            total: (x._sum.prompt ?? 0) + (x._sum.response ?? 0)
+        }));
+    }
 }
