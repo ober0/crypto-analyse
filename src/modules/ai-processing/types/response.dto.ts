@@ -68,9 +68,6 @@ export class TradeActionResponseDto {
     price?: number | null;
 
     @ApiProperty({ required: false, type: Number })
-    leverage?: number | null;
-
-    @ApiProperty({ required: false, type: Number })
     stopLoss?: number | null;
 
     @ApiProperty({ required: false, type: Number })
@@ -104,9 +101,6 @@ export class TradeResponseDto {
 
     @ApiProperty()
     averageEntryPrice: number;
-
-    @ApiProperty()
-    currentLeverage: number;
 
     @ApiProperty({ required: false, type: Number })
     stopLoss?: number | null;

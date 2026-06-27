@@ -15,6 +15,15 @@ export class AiProcessingListItemDto extends AiProcessingResponseDto {
 
     @ApiProperty({ required: false, type: Number })
     averagePnl: number | null;
+
+    @ApiProperty({ required: false, type: Number })
+    totalPnl: number | null;
+
+    @ApiProperty({ required: false, type: Number })
+    averagePnlPercent: number | null;
+
+    @ApiProperty({ required: false, type: Number })
+    totalPnlPercent: number | null;
 }
 
 export class FiltersAiProcessingDto extends PartialType(

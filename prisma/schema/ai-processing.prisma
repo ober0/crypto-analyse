@@ -61,7 +61,6 @@ enum TradeActionType {
   Buy
   Sell
   Partial_close
-  Change_leverage
   Change_stop_loss
   Change_take_profit
   Close
@@ -90,8 +89,6 @@ model Trade {
   currentSize Decimal @db.Decimal(32, 16)
 
   averageEntryPrice Decimal @db.Decimal(32, 16)
-
-  currentLeverage Float
 
   stopLoss Decimal? @db.Decimal(32, 16)
 
@@ -128,8 +125,6 @@ model TradeAction {
   quantity Decimal? @db.Decimal(32, 16)
 
   price Decimal? @db.Decimal(32, 16)
-
-  leverage Float?
 
   stopLoss Decimal? @db.Decimal(32, 16)
 

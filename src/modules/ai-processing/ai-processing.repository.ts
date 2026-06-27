@@ -173,22 +173,58 @@ export class AiProcessingRepository {
         }
 
         const tickerIds = [...new Set(items.map((item) => item.tickersId))];
-        const tradeStats = await this.prisma.trade.groupBy({
-            by: ["tickerId"],
+        const trades = await this.prisma.trade.findMany({
             where: { tickerId: { in: tickerIds } },
-            _count: true,
-            _avg: { pnl: true }
+            select: {
+                tickerId: true,
+                pnl: true,
+                averageEntryPrice: true,
+                currentSize: true
+            }
         });
 
-        const statsByTickerId = new Map(tradeStats.map((stat) => [stat.tickerId, stat]));
+        const statsByTickerId = new Map<
+            number,
+            { count: number; totalPnl: number; pnlCount: number; totalInvested: number; percentSum: number; percentCount: number }
+        >();
+
+        for (const trade of trades) {
+            const stat = statsByTickerId.get(trade.tickerId) ?? {
+                count: 0,
+                totalPnl: 0,
+                pnlCount: 0,
+                totalInvested: 0,
+                percentSum: 0,
+                percentCount: 0
+            };
+
+            stat.count++;
+            const invested = Number(trade.averageEntryPrice) * Number(trade.currentSize);
+            stat.totalInvested += invested;
+
+            if (trade.pnl != null) {
+                stat.totalPnl += Number(trade.pnl);
+                stat.pnlCount++;
+
+                if (invested > 0) {
+                    stat.percentSum += (Number(trade.pnl) / invested) * 100;
+                    stat.percentCount++;
+                }
+            }
+
+            statsByTickerId.set(trade.tickerId, stat);
+        }
 
         return items.map((item) => {
             const stat = statsByTickerId.get(item.tickersId);
 
             return {
                 ...item,
-                tradesCount: stat?._count ?? 0,
-                averagePnl: stat?._avg.pnl != null ? Number(stat._avg.pnl) : null
+                tradesCount: stat?.count ?? 0,
+                averagePnl: stat?.pnlCount ? stat.totalPnl / stat.pnlCount : null,
+                totalPnl: stat?.pnlCount ? stat.totalPnl : null,
+                averagePnlPercent: stat?.percentCount ? stat.percentSum / stat.percentCount : null,
+                totalPnlPercent: stat?.totalInvested ? (stat.totalPnl / stat.totalInvested) * 100 : null
             };
         });
     }
