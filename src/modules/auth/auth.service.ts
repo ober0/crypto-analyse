@@ -14,7 +14,7 @@ import { UserService } from "../user/user.service";
 import { AuthRepository } from "./auth.repository";
 import { LoginDto } from "./dto/login.dto";
 import { UserResponseDto } from "../user/dto/response.dto";
-import { GeneratedTokens, LoginResponseDto, TokenPayload } from "./dto/tokens.dto";
+import { AccessTokenDto, GeneratedTokens, LoginResponseDto, TokenPayload } from "./dto/tokens.dto";
 import * as bcrypt from "bcrypt";
 
 @Injectable()
@@ -45,11 +45,7 @@ export class AuthService {
         return bcrypt.compare(password, hashedPassword);
     }
 
-    async saveToken({ userId, refreshToken }: { userId: number; refreshToken: string }) {
-        return this.authRepository.saveToken({ userId, refreshToken });
-    }
-
-    async login(dto: LoginDto): Promise<LoginResponseDto & { refreshToken: string }> {
+    async login(dto: LoginDto): Promise<LoginResponseDto & { refreshToken: string } & AccessTokenDto> {
         const user = await this.userService.findOneByUsernameWithPassword(dto.username);
         if (!user) {
             throw new ForbiddenException("Неверные авторизационные данные.");
@@ -107,7 +103,7 @@ export class AuthService {
         const payload: TokenPayload = { id: user.id };
 
         const accessToken = jwt.sign(payload, this.configService.get("JWT_ACCESS_SECRET")!, {
-            expiresIn: "1h"
+            expiresIn: "10m"
         });
 
         const refreshToken = jwt.sign(payload, this.configService.get("JWT_REFRESH_SECRET")!, {

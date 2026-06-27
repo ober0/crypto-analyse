@@ -1,0 +1,14 @@
+model Usage {
+  id Int @id @default(autoincrement())
+
+  prompt   Int
+  response Int
+
+  model Models
+
+  tickerProcessing TickerProcessing?
+
+  createdAt DateTime @default(now())
+
+  @@map("usage")
+}

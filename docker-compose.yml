@@ -25,7 +25,7 @@ services:
         env_file:
             - .env
         ports:
-            - "3000:3000"
+            - "${VPS_PORT}:3000"
         command: >
             sh -c "
                 npm run migrate:deploy

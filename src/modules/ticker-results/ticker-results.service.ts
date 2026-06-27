@@ -28,4 +28,8 @@ export class TickerResultsService {
     async findAllByWhere(where: Prisma.TickerProcessingWhereInput): Promise<TickerResultsResponse[]> {
         return this.repository.findAllByWhere(where);
     }
+
+    async getUsageByModel() {
+        return this.repository.getUsageByModel();
+    }
 }

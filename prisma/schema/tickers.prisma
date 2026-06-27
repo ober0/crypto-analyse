@@ -24,8 +24,7 @@ enum DirectionEnum {
 
 enum Models {
   Gpt5
-  DeepseekR1T
-  Qwen3
+  Deepseek4Flash
   Llama4
 }
 
@@ -52,6 +51,9 @@ model TickerProcessing {
   pnl                  Float?
   unrealizedPnl        Float?
   isPredictAchieved    Boolean?
+
+  usage   Usage @relation(fields: [usageId], references: [id])
+  usageId Int   @unique
 
   isClosed  Boolean   @default(false)
   closedAt  DateTime?

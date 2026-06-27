@@ -14,7 +14,7 @@ export class AccessTokenDto {
     accessToken: string;
 }
 
-export class LoginResponseDto extends AccessTokenDto {
+export class LoginResponseDto {
     @ApiProperty()
     @ValidateNested()
     @Type(() => UserResponseDto)
