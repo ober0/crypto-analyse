@@ -20,6 +20,13 @@ export class AuthController {
     ): Promise<LoginResponseDto> {
         const data = await this.authService.login(loginDto);
 
+        response.cookie("accessToken", data.refreshToken, {
+            secure: true,
+            sameSite: "none",
+            httpOnly: true,
+            maxAge: 1000 * 60 * 10 // 10 минут
+        });
+
         response.cookie("refreshToken", data.refreshToken, {
             secure: true,
             sameSite: "none",
@@ -28,19 +35,14 @@ export class AuthController {
         });
 
         return {
-            accessToken: data.accessToken,
             user: data.user
         };
     }
 
     @ApiOperation({ summary: "Обновление токенов" })
-    @ApiOkResponse({ type: AccessTokenDto })
     @HttpCode(HttpStatus.OK)
     @Post("refresh")
-    async refresh(
-        @Req() request: express.Request,
-        @Res({ passthrough: true }) response: express.Response
-    ): Promise<AccessTokenDto> {
+    async refresh(@Req() request: express.Request, @Res({ passthrough: true }) response: express.Response) {
         const refreshToken = request.cookies["refreshToken"];
         if (!refreshToken) {
             throw new ForbiddenException("Refresh токен не найден");
@@ -48,16 +50,19 @@ export class AuthController {
 
         const data = await this.authService.refresh(refreshToken);
 
+        response.cookie("accessToken", data.refreshToken, {
+            secure: true,
+            sameSite: "none",
+            httpOnly: true,
+            maxAge: 1000 * 60 * 10 // 10 минут
+        });
+
         response.cookie("refreshToken", data.refreshToken, {
             secure: true,
             sameSite: "none",
             httpOnly: true,
             maxAge: 1000 * 3600 * 24 * 7 // 7 дней
         });
-
-        return {
-            accessToken: data.accessToken
-        };
     }
 
     @ApiOperation({ summary: "Выход пользователя" })
@@ -72,6 +77,12 @@ export class AuthController {
         if (!refreshToken) {
             throw new ForbiddenException("Refresh токен не найден");
         }
+
+        response.clearCookie("accessToken", {
+            secure: true,
+            sameSite: "none",
+            httpOnly: true
+        });
 
         response.clearCookie("refreshToken", {
             secure: true,
