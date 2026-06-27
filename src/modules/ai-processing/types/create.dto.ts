@@ -1,12 +1,16 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { ProcessingInterval } from "@prisma/client";
+import { Models, ProcessingInterval } from "@prisma/client";
 import { Type } from "class-transformer";
-import { IsBoolean, IsDate, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from "class-validator";
+import { IsBoolean, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from "class-validator";
 
 export class CreateAiProcessingDto {
     @ApiProperty()
     @IsNumber()
     tickersId: number;
+
+    @ApiProperty({ enum: Models })
+    @IsEnum(Models)
+    model: Models;
 
     @ApiProperty()
     @IsNumber()

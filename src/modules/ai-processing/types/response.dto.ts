@@ -1,5 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import {
+    Models,
     ProcessingInterval,
     ProcessingStatus,
     TradeActionType,
@@ -20,6 +21,9 @@ export class AiProcessingResponseDto {
 
     @ApiProperty()
     tickersId: number;
+
+    @ApiProperty({ enum: Models })
+    model: Models;
 
     @ApiProperty()
     checkIntervalMins: number;

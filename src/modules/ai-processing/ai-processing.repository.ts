@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { Prisma, ProcessingInterval, ProcessingStatus } from "@prisma/client";
+import { Prisma, ProcessingInterval, ProcessingStatus, Models } from "@prisma/client";
 import { mapPagination } from "@app/tools/map.pagination";
 import { mapSearch } from "@app/tools/map.search";
 import { mapSort } from "@app/tools/map.sort";
@@ -14,11 +14,17 @@ const ACTIVE_STATUSES: ProcessingStatus[] = [ProcessingStatus.Ready, ProcessingS
 export class AiProcessingRepository {
     constructor(private readonly prisma: PrismaService) {}
 
-    async findActiveByUserAndTicker(userId: number, tickersId: number, excludeId?: number) {
+    async findActiveByUserTickerAndModel(
+        userId: number,
+        tickersId: number,
+        model: Models,
+        excludeId?: number
+    ) {
         return this.prisma.aiProcessing.findFirst({
             where: {
                 userId,
                 tickersId,
+                model,
                 status: { in: ACTIVE_STATUSES },
                 ...(excludeId ? { id: { not: excludeId } } : {})
             }
@@ -30,6 +36,7 @@ export class AiProcessingRepository {
             data: {
                 userId,
                 tickersId: dto.tickersId,
+                model: dto.model,
                 checkIntervalMins: dto.checkIntervalMins,
                 interval: dto.interval,
                 customPrompt: dto.customPrompt,
@@ -128,11 +135,21 @@ export class AiProcessingRepository {
             return { userId };
         }
 
-        const { statuses, ...rest } = filters;
-        const mapped = mapSearch(rest, [], ["statuses"]) as Prisma.AiProcessingWhereInput;
+        const { statuses, status, model, interval, ...rest } = filters;
+        const mapped = mapSearch(rest, [], ["statuses", "status", "model", "interval"]) as Prisma.AiProcessingWhereInput;
 
         if (statuses?.length) {
             mapped.status = { in: statuses };
+        } else if (status) {
+            mapped.status = status;
+        }
+
+        if (model) {
+            mapped.model = model;
+        }
+
+        if (interval) {
+            mapped.interval = interval;
         }
 
         return { userId, ...mapped };
@@ -149,7 +166,7 @@ export class AiProcessingRepository {
             this.prisma.aiProcessing.count({ where }),
             this.prisma.aiProcessing.findMany({
                 where,
-                select: { tickersId: true }
+                select: { id: true }
             })
         ]);
 
@@ -157,9 +174,8 @@ export class AiProcessingRepository {
             return { count, averagePnl: null };
         }
 
-        const tickerIds = [...new Set(processings.map((item) => item.tickersId))];
         const aggregate = await this.prisma.trade.aggregate({
-            where: { tickerId: { in: tickerIds } },
+            where: { aiProcessingId: { in: processings.map((item) => item.id) } },
             _avg: { pnl: true }
         });
 
@@ -183,18 +199,18 @@ export class AiProcessingRepository {
             return [];
         }
 
-        const tickerIds = [...new Set(items.map((item) => item.tickersId))];
+        const processingIds = items.map((item) => item.id);
         const trades = await this.prisma.trade.findMany({
-            where: { tickerId: { in: tickerIds } },
+            where: { aiProcessingId: { in: processingIds } },
             select: {
-                tickerId: true,
+                aiProcessingId: true,
                 pnl: true,
                 averageEntryPrice: true,
                 currentSize: true
             }
         });
 
-        const statsByTickerId = new Map<
+        const statsByProcessingId = new Map<
             number,
             {
                 count: number;
@@ -207,7 +223,7 @@ export class AiProcessingRepository {
         >();
 
         for (const trade of trades) {
-            const stat = statsByTickerId.get(trade.tickerId) ?? {
+            const stat = statsByProcessingId.get(trade.aiProcessingId) ?? {
                 count: 0,
                 totalPnl: 0,
                 pnlCount: 0,
@@ -230,11 +246,11 @@ export class AiProcessingRepository {
                 }
             }
 
-            statsByTickerId.set(trade.tickerId, stat);
+            statsByProcessingId.set(trade.aiProcessingId, stat);
         }
 
         return items.map((item) => {
-            const stat = statsByTickerId.get(item.tickersId);
+            const stat = statsByProcessingId.get(item.id);
 
             return {
                 ...item,

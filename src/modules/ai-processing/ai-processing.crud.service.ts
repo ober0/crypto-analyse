@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { ProcessingStatus } from "@prisma/client";
+import { Prisma, ProcessingStatus } from "@prisma/client";
 import { TickersService } from "../tickers/tickers.service";
 import { AiProcessingRepository } from "./ai-processing.repository";
 import { CreateAiProcessingDto } from "./types/create.dto";
@@ -17,12 +17,20 @@ export class AiProcessingCrudService {
     async create(userId: number, dto: CreateAiProcessingDto): Promise<AiProcessingResponseDto> {
         await this.tickersService.findOneById(dto.tickersId);
 
-        const existing = await this.repository.findActiveByUserAndTicker(userId, dto.tickersId);
+        const existing = await this.repository.findActiveByUserTickerAndModel(userId, dto.tickersId, dto.model);
         if (existing) {
-            throw new BadRequestException("На этот тикер уже есть активный бот");
+            throw new BadRequestException("На этот тикер с этой моделью уже есть активный бот");
         }
 
-        return this.repository.create(userId, dto);
+        try {
+            return await this.repository.create(userId, dto);
+        } catch (error) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+                throw new BadRequestException("На этот тикер с этой моделью бот уже существует");
+            }
+
+            throw error;
+        }
     }
 
     async enable(userId: number, id: number): Promise<AiProcessingResponseDto> {
@@ -36,9 +44,14 @@ export class AiProcessingCrudService {
             throw new BadRequestException("бот уже включен");
         }
 
-        const conflicting = await this.repository.findActiveByUserAndTicker(userId, item.tickersId, id);
+        const conflicting = await this.repository.findActiveByUserTickerAndModel(
+            userId,
+            item.tickersId,
+            item.model,
+            id
+        );
         if (conflicting) {
-            throw new BadRequestException("На этот тикер уже есть активный бот");
+            throw new BadRequestException("На этот тикер с этой моделью уже есть активный бот");
         }
 
         return this.repository.enable(id, item.interval);

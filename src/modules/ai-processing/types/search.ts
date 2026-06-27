@@ -1,10 +1,8 @@
 import { SearchBaseDto } from "@app/common-dto/base-search.dto";
 import { CommonSearchResponseDto } from "@app/common-dto/search-response.dto";
-import { DateMinMaxFilterDto } from "@app/common-dto/min-max.filter.dto";
 import { SortDtoGenerator } from "@app/common-dto/sort-generate.dto";
-import { Contains } from "@app/tools/contains.decorator";
 import { ApiProperty, PartialType, PickType } from "@nestjs/swagger";
-import { ProcessingInterval, ProcessingStatus } from "@prisma/client";
+import { Models, ProcessingInterval, ProcessingStatus } from "@prisma/client";
 import { Type } from "class-transformer";
 import { IsEnum, IsNumber, IsOptional, ValidateNested } from "class-validator";
 import { AiProcessingResponseDto } from "./response.dto";
@@ -27,17 +25,27 @@ export class AiProcessingListItemDto extends AiProcessingResponseDto {
 }
 
 export class FiltersAiProcessingDto extends PartialType(
-    PickType(AiProcessingResponseDto, ["status", "interval", "withWebSearch", "tickersId"])
+    PickType(AiProcessingResponseDto, ["withWebSearch", "tickersId"])
 ) {
+    @ApiProperty({ enum: Models })
+    @IsOptional()
+    @IsEnum(Models)
+    model?: Models;
+
+    @ApiProperty({ enum: ProcessingStatus })
+    @IsOptional()
+    @IsEnum(ProcessingStatus)
+    status?: ProcessingStatus;
+
+    @ApiProperty({ enum: ProcessingInterval })
+    @IsOptional()
+    @IsEnum(ProcessingInterval)
+    interval?: ProcessingInterval;
+
     @ApiProperty({ enum: ProcessingStatus, isArray: true })
     @IsOptional()
     @IsEnum(ProcessingStatus, { each: true })
     statuses?: ProcessingStatus[];
-
-    @ApiProperty({ enum: ProcessingInterval })
-    @IsOptional()
-    @Contains()
-    interval?: ProcessingInterval;
 
     @ApiProperty({ type: Number, isArray: true })
     @IsOptional()
