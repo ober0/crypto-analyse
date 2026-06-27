@@ -62,7 +62,7 @@ export class AiProcessingRepository {
         const item = await this.findByIdForUser(id, userId);
 
         const trades = await this.prisma.trade.findMany({
-            where: { tickerId: item.tickersId },
+            where: { aiProcessingId: item.id },
             include: {
                 actions: {
                     orderBy: { createdAt: "asc" }
@@ -104,7 +104,18 @@ export class AiProcessingRepository {
             where: { id },
             data: {
                 status: ProcessingStatus.End,
-                endAt: new Date()
+                endAt: new Date(),
+                trades: {
+                    updateMany: {
+                        where: {
+                            status: "Open"
+                        },
+                        data: {
+                            status: "Closed",
+                            closeReason: "BotDisable"
+                        }
+                    }
+                }
             },
             include: {
                 ticker: true
@@ -185,7 +196,14 @@ export class AiProcessingRepository {
 
         const statsByTickerId = new Map<
             number,
-            { count: number; totalPnl: number; pnlCount: number; totalInvested: number; percentSum: number; percentCount: number }
+            {
+                count: number;
+                totalPnl: number;
+                pnlCount: number;
+                totalInvested: number;
+                percentSum: number;
+                percentCount: number;
+            }
         >();
 
         for (const trade of trades) {
@@ -232,6 +250,12 @@ export class AiProcessingRepository {
     async count(userId: number, dto: SearchAiProcessingDto): Promise<number> {
         return this.prisma.aiProcessing.count({
             where: this.buildWhere(userId, dto.filters)
+        });
+    }
+
+    async delete(id: number) {
+        return this.prisma.aiProcessing.delete({
+            where: { id }
         });
     }
 }

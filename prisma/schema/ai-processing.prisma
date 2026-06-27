@@ -19,6 +19,8 @@ enum ProcessingStatus {
 model AiProcessing {
   id Int @id @default(autoincrement())
 
+  model Models
+
   user   User @relation(fields: [userId], references: [id])
   userId Int
 
@@ -36,6 +38,8 @@ model AiProcessing {
   withWebSearch Boolean @default(true)
 
   status ProcessingStatus
+
+  trades Trade[]
 
   createdAt DateTime
 
@@ -70,6 +74,7 @@ enum TradeActionType {
 
 enum TradeCloseReason {
   Signal
+  BotDisable
   Sl
   Tp
 
@@ -94,6 +99,8 @@ model Trade {
 
   takeProfit Decimal? @db.Decimal(32, 16)
 
+  currentPrice Decimal @db.Decimal(32, 16)
+
   pnl Decimal? @db.Decimal(32, 16)
 
   closeReason TradeCloseReason?
@@ -108,6 +115,9 @@ model Trade {
   updatedAt DateTime @updatedAt
 
   actions TradeAction[]
+
+  aiProcessing   AiProcessing @relation(fields: [aiProcessingId], references: [id])
+  aiProcessingId Int
 
   @@index([status])
   @@index([tickerId])

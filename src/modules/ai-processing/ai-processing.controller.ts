@@ -1,9 +1,20 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Post, UseGuards } from "@nestjs/common";
+import {
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpCode,
+    HttpStatus,
+    Param,
+    ParseIntPipe,
+    Post,
+    UseGuards
+} from "@nestjs/common";
 import { ApiOkResponse, ApiOperation, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { JwtAuthGuardHttp } from "../auth/guards/auth.guard";
 import { DecodeUser } from "../auth/decorators/decode-user";
 import { UserBaseDto } from "../user/dto/base.dto";
-import { AiProcessingService } from "./ai-processing.service";
+import { AiProcessingCrudService } from "./ai-processing.crud.service";
 import { CreateAiProcessingDto } from "./types/create.dto";
 import { AiProcessingDetailResponseDto, AiProcessingResponseDto } from "./types/response.dto";
 import { AiProcessingSearchResponseDto, SearchAiProcessingDto } from "./types/search";
@@ -14,7 +25,7 @@ import { AiProcessingStatsRequestDto, AiProcessingStatsResponseDto } from "./typ
 @ApiSecurity("bearer")
 @UseGuards(JwtAuthGuardHttp)
 export class AiProcessingController {
-    constructor(private readonly service: AiProcessingService) {}
+    constructor(private readonly service: AiProcessingCrudService) {}
 
     @Post()
     @HttpCode(HttpStatus.CREATED)
@@ -77,5 +88,13 @@ export class AiProcessingController {
         @Param("id", ParseIntPipe) id: number
     ): Promise<AiProcessingResponseDto> {
         return this.service.disable(user.id, id);
+    }
+
+    @Delete(":id")
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: "удалить торгового бота" })
+    @ApiOkResponse({ type: AiProcessingResponseDto })
+    async delete(@DecodeUser() user: UserBaseDto, @Param("id", ParseIntPipe) id: number) {
+        return this.service.delete(user.id, id);
     }
 }

@@ -102,6 +102,12 @@ export class TradeResponseDto {
     @ApiProperty()
     averageEntryPrice: number;
 
+    @ApiProperty()
+    currentPrice: number;
+
+    @ApiProperty()
+    aiProcessingId: number;
+
     @ApiProperty({ required: false, type: Number })
     stopLoss?: number | null;
 
