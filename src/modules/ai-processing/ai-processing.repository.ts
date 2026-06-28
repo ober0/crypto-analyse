@@ -1,5 +1,13 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { Prisma, ProcessingInterval, ProcessingStatus, Models } from "@prisma/client";
+import {
+    Prisma,
+    ProcessingInterval,
+    ProcessingStatus,
+    Models,
+    TradeCloseReason,
+    TradeStatus,
+    TradeActionType
+} from "@prisma/client";
 import { mapPagination } from "@app/tools/map.pagination";
 import { mapSearch } from "@app/tools/map.search";
 import { mapSort } from "@app/tools/map.sort";
@@ -13,23 +21,6 @@ const ACTIVE_STATUSES: ProcessingStatus[] = [ProcessingStatus.Ready, ProcessingS
 @Injectable()
 export class AiProcessingRepository {
     constructor(private readonly prisma: PrismaService) {}
-
-    async findActiveByUserTickerAndModel(
-        userId: number,
-        tickersId: number,
-        model: Models,
-        excludeId?: number
-    ) {
-        return this.prisma.aiProcessing.findFirst({
-            where: {
-                userId,
-                tickersId,
-                model,
-                status: { in: ACTIVE_STATUSES },
-                ...(excludeId ? { id: { not: excludeId } } : {})
-            }
-        });
-    }
 
     async create(userId: number, dto: CreateAiProcessingDto) {
         return this.prisma.aiProcessing.create({
@@ -136,7 +127,11 @@ export class AiProcessingRepository {
         }
 
         const { statuses, status, model, interval, ...rest } = filters;
-        const mapped = mapSearch(rest, [], ["statuses", "status", "model", "interval"]) as Prisma.AiProcessingWhereInput;
+        const mapped = mapSearch(
+            rest,
+            [],
+            ["statuses", "status", "model", "interval"]
+        ) as Prisma.AiProcessingWhereInput;
 
         if (statuses?.length) {
             mapped.status = { in: statuses };
@@ -274,6 +269,49 @@ export class AiProcessingRepository {
             where: { id }
         });
     }
-}
 
-export { ACTIVE_STATUSES };
+    async getAllActiveTrades() {
+        return this.prisma.trade.findMany({
+            where: {
+                status: "Open"
+            }
+        });
+    }
+
+    async updateTrade(id: number, data: { price: number; pnl: number }) {
+        await this.prisma.trade.update({
+            where: {
+                id
+            },
+            data: {
+                currentPrice: data.price,
+                pnl: data.pnl
+            }
+        });
+    }
+
+    async closeTrade(
+        id: number,
+        data: { closeReason: TradeCloseReason; description: string; size: number; price: number; pnl: number }
+    ) {
+        await this.prisma.trade.update({
+            where: {
+                id
+            },
+            data: {
+                closeReason: data.closeReason,
+                closeDescription: data.description,
+                status: TradeStatus.Closed,
+                actions: {
+                    create: {
+                        type: TradeActionType.Close,
+                        comment: data.description,
+                        price: data.price,
+                        realizedPnl: data.pnl,
+                        quantity: data.size
+                    }
+                }
+            }
+        });
+    }
+}

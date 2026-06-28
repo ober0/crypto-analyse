@@ -17,11 +17,6 @@ export class AiProcessingCrudService {
     async create(userId: number, dto: CreateAiProcessingDto): Promise<AiProcessingResponseDto> {
         await this.tickersService.findOneById(dto.tickersId);
 
-        const existing = await this.repository.findActiveByUserTickerAndModel(userId, dto.tickersId, dto.model);
-        if (existing) {
-            throw new BadRequestException("На этот тикер с этой моделью уже есть активный бот");
-        }
-
         try {
             return await this.repository.create(userId, dto);
         } catch (error) {
@@ -42,16 +37,6 @@ export class AiProcessingCrudService {
 
         if (item.status === ProcessingStatus.Active || item.status === ProcessingStatus.InOrder) {
             throw new BadRequestException("бот уже включен");
-        }
-
-        const conflicting = await this.repository.findActiveByUserTickerAndModel(
-            userId,
-            item.tickersId,
-            item.model,
-            id
-        );
-        if (conflicting) {
-            throw new BadRequestException("На этот тикер с этой моделью уже есть активный бот");
         }
 
         return this.repository.enable(id, item.interval);
