@@ -314,4 +314,15 @@ export class AiProcessingRepository {
             }
         });
     }
+
+    async getAllActiveBots() {
+        return this.prisma.aiProcessing.findMany({
+            where: {
+                status: ProcessingStatus.Active
+            },
+            include: {
+                trades: true
+            }
+        });
+    }
 }

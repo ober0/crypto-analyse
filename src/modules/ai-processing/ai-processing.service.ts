@@ -3,7 +3,7 @@ import { TickersService } from "../tickers/tickers.service";
 import { MarketDataService } from "../market-data/market-data.service";
 import pLimit from "p-limit";
 import { AiProcessingRepository } from "./ai-processing.repository";
-import { DirectionEnum, Trade, TradeCloseReason, TradeDirection } from "@prisma/client";
+import { DirectionEnum, Trade, TradeCloseReason, TradeDirection, TradeStatus } from "@prisma/client";
 
 @Injectable()
 export class AiProcessingService {
@@ -142,5 +142,19 @@ export class AiProcessingService {
         ]);
 
         this.logger.debug(`Успешно закрыто ${count} сделок по sl/tp`);
+    }
+
+    async closeBots() {
+        const bots = await this.repository.getAllActiveBots();
+
+        await Promise.all(
+            bots.map(async (bot) => {
+                if (bot.trades.some((trade) => trade.status === TradeStatus.Open)) {
+                    return;
+                }
+
+                await this.repository.disable(bot.id);
+            })
+        );
     }
 }
