@@ -8,6 +8,9 @@ model Usage {
 
   tickerProcessing TickerProcessing?
 
+  aiProcessing   AiProcessing? @relation(fields: [aiProcessingId], references: [id])
+  aiProcessingId Int?
+
   createdAt DateTime @default(now())
 
   @@map("usage")

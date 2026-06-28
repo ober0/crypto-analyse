@@ -6,9 +6,10 @@ import { AiProcessingCrudService } from "./ai-processing.crud.service";
 import { AiProcessingService } from "./ai-processing.service";
 import { AiProcessingCron } from "./ai-processing.cron";
 import { MarketDataModule } from "../market-data/market-data.module";
+import { AiModule } from "../ai/ai.module";
 
 @Module({
-    imports: [TickersModule, MarketDataModule],
+    imports: [TickersModule, MarketDataModule, AiModule],
     providers: [AiProcessingCrudService, AiProcessingService, AiProcessingCron, AiProcessingRepository],
     controllers: [AiProcessingController],
     exports: [AiProcessingCrudService]

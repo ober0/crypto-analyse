@@ -28,6 +28,8 @@ model AiProcessing {
   tickersId Int
 
   checkIntervalMins Int
+  lastCheckAt       DateTime?
+  nextCheckAt       DateTime?
 
   startAt  DateTime?
   endAt    DateTime?
@@ -40,6 +42,8 @@ model AiProcessing {
   status ProcessingStatus
 
   trades Trade[]
+
+  usage Usage[]
 
   createdAt DateTime
 

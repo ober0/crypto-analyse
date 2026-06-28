@@ -1,7 +1,7 @@
-import { TimeframeEnum } from "@prisma/client";
+import { Interval } from "../../ai/tools-schemas/market-data.schema";
 
 export class GetSymbolDataDto {
     symbol: string;
     candles: number;
-    interval: "1" | "15" | "60" | "D" | "W";
+    interval: Interval;
 }

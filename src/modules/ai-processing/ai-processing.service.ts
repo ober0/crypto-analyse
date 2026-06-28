@@ -3,7 +3,11 @@ import { TickersService } from "../tickers/tickers.service";
 import { MarketDataService } from "../market-data/market-data.service";
 import pLimit from "p-limit";
 import { AiProcessingRepository } from "./ai-processing.repository";
-import { DirectionEnum, Trade, TradeCloseReason, TradeDirection, TradeStatus } from "@prisma/client";
+import { Models, Trade, TradeCloseReason, TradeDirection, TradeStatus } from "@prisma/client";
+import { ToolsService } from "../ai/services/tools.service";
+import { AiService } from "../ai/services/ai.service";
+import { ChatOpenAI } from "@langchain/openai";
+import { deepseekChat, llamaChat, openAiChat } from "../ai/models/models";
 
 @Injectable()
 export class AiProcessingService {
@@ -12,7 +16,9 @@ export class AiProcessingService {
     constructor(
         private readonly tickerService: TickersService,
         private readonly marketDataService: MarketDataService,
-        private readonly repository: AiProcessingRepository
+        private readonly repository: AiProcessingRepository,
+        private readonly toolsService: ToolsService,
+        private readonly aiService: AiService
     ) {}
 
     async actualizeTickerData() {
@@ -43,7 +49,7 @@ export class AiProcessingService {
     }
 
     private async actualizePriceAndPnl(actualPrice: Record<number, number>, trades: Trade[]) {
-        const limit = pLimit(3);
+        const limit = pLimit(10);
 
         let count: number = 0;
 
@@ -156,5 +162,64 @@ export class AiProcessingService {
                 await this.repository.disable(bot.id);
             })
         );
+    }
+
+    async createTrades() {
+        const bots = await this.repository.getAllActiveBots();
+
+        const filteredBots = bots.filter((bot) => {
+            if (bot.lastCheckAt && bot.lastCheckAt > new Date()) {
+                return false;
+            }
+            return true;
+        });
+
+        const tickers = Object.fromEntries((await this.tickerService.getAll()).map(({ id, name }) => [id, name]));
+
+        const limit = pLimit(10);
+
+        const count: number = 0;
+        const newTrades: number = 0;
+
+        await Promise.all(
+            filteredBots.map(async (bot) => {
+                return limit(async () => {
+                    const tools = [this.toolsService.indicatorsTool, this.toolsService.marketDataTool];
+                    if (bot.withWebSearch) {
+                        tools.push(this.toolsService.webSearchTool);
+                    }
+
+                    const tickerName = tickers[bot.tickersId];
+
+                    const model = this.getModel(bot.model).bindTools(tools);
+
+                    const aiData = await this.aiService.openTrade({
+                        model,
+                        ticker: tickerName,
+                        customPrompt: bot.customPrompt
+                    });
+
+                    if (aiData.error) {
+                        this.logger.error(aiData.error);
+                        return;
+                    }
+
+                    const { usage, response } = aiData;
+
+                    // TODO обработка ответа
+                });
+            })
+        );
+    }
+
+    private getModel(model: Models): ChatOpenAI {
+        switch (model) {
+            case Models.Deepseek4Flash:
+                return deepseekChat;
+            case Models.Gpt5:
+                return openAiChat;
+            case Models.Llama4:
+                return llamaChat;
+        }
     }
 }

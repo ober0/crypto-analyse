@@ -19,10 +19,17 @@ export class AiProcessingCron {
         this.logger.debug("Actualizing ticket data end");
     }
 
-    @Cron("*/ 5 * * * *")
+    @Cron("*/5 * * * *")
     async closeBot() {
         this.logger.debug("Close bots process start");
         await this.service.closeBots();
         this.logger.debug("Close bots process end");
+    }
+
+    @Cron("*/5 * * * *")
+    async createTrade() {
+        this.logger.debug("trade creation start");
+        await this.service.createTrades();
+        this.logger.debug("trade creation end");
     }
 }

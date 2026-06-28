@@ -29,6 +29,12 @@ export class AiProcessingResponseDto {
     checkIntervalMins: number;
 
     @ApiProperty()
+    lastCheckAt: Date | null;
+
+    @ApiProperty()
+    nextCheckAt: Date | null;
+
+    @ApiProperty()
     startAt: Date | null;
 
     @ApiProperty()
