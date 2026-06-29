@@ -4,6 +4,7 @@ import { AIMessageChunk, BaseMessage, HumanMessage, SystemMessage } from "@langc
 import { StructuredOutputParser } from "@langchain/core/output_parsers";
 import { Runnable, RunnableLambda } from "@langchain/core/runnables";
 import { z } from "zod";
+import { StructuredToolInterface } from "@langchain/core/tools";
 import { ToolsService } from "./tools.service";
 import { createOpenTradeGraph } from "../graphs/open-trade.graph";
 import { OpenTradePrompt } from "../prompts/open-trade";
@@ -61,13 +62,17 @@ export class AiService {
     async openTrade({
         ticker,
         model,
-        customPrompt
+        customPrompt,
+        price,
+        tools
     }: {
         ticker: string;
         customPrompt?: string | null;
         model: Runnable<BaseLanguageModelInput, AIMessageChunk, ChatOpenAICallOptions>;
+        price: number;
+        tools?: StructuredToolInterface[];
     }): Promise<{ usage: TokenUsage; response: OpenTradeResultType; error: string | null }> {
-        const inputData = `Тикер: ${ticker}, Дата: ${new Date().toISOString()}.
+        const inputData = `Тикер: ${ticker}, Дата: ${new Date().toISOString()}. Актуальная цена ${price}
          Пожелания пользователя ${customPrompt ?? "отсутствуют"}`;
 
         const response = await this.openTradeGraph.invoke(
@@ -81,7 +86,8 @@ export class AiService {
             {
                 configurable: {
                     model,
-                    ticker
+                    ticker,
+                    tools
                 }
             }
         );

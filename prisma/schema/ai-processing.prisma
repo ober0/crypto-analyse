@@ -45,9 +45,34 @@ model AiProcessing {
 
   usage Usage[]
 
+  logs ProcessingLogs[]
+
   createdAt DateTime
 
   @@map("ai_processing")
+}
+
+enum ProcessingLogsEnum {
+  TradePass
+  TradeOpen
+  TradeActive
+  TradeClose
+
+  @@map("processing_logs_enum")
+}
+
+model ProcessingLogs {
+  id Int @id @default(autoincrement())
+
+  type ProcessingLogsEnum
+  text String?
+
+  aiProcessing   AiProcessing @relation(fields: [aiProcessingId], references: [id])
+  aiProcessingId Int
+
+  createdAt DateTime @default(now())
+
+  @@map("processing_logs")
 }
 
 enum TradeStatus {
@@ -92,6 +117,11 @@ model Trade {
   ticker   Tickers @relation(fields: [tickerId], references: [id])
 
   direction TradeDirection
+
+  confidence        Float
+  mainTimeframe     String
+  invalidationLevel Decimal @db.Decimal(32, 16)
+  liquidityZone     String?
 
   status TradeStatus @default(Open)
 

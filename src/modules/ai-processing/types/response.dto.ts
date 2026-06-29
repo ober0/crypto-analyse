@@ -100,6 +100,18 @@ export class TradeResponseDto {
     @ApiProperty()
     tickerId: number;
 
+    @ApiProperty()
+    confidence: number;
+
+    @ApiProperty()
+    mainTimeframe: string;
+
+    @ApiProperty()
+    invalidationLevel: number;
+
+    @ApiProperty()
+    liquidityZone?: string | null;
+
     @ApiProperty({ enum: TradeDirection })
     direction: TradeDirection;
 

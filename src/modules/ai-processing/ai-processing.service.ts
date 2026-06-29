@@ -174,12 +174,30 @@ export class AiProcessingService {
             return true;
         });
 
-        const tickers = Object.fromEntries((await this.tickerService.getAll()).map(({ id, name }) => [id, name]));
+        const tickersEntities = await this.tickerService.getAll();
+
+        const tickers = Object.fromEntries(tickersEntities.map(({ id, name }) => [id, name]));
 
         const limit = pLimit(10);
 
-        const count: number = 0;
-        const newTrades: number = 0;
+        let count: number = 0;
+        let newTrades: number = 0;
+
+        const symbolDataEntries = await Promise.all(
+            tickersEntities.map(async (ticker) => {
+                const marketData = await this.marketDataService
+                    .getSymbolData({
+                        interval: "1",
+                        candles: 1,
+                        symbol: ticker.name
+                    })
+                    .then((el) => el.at(0));
+
+                return [ticker.id, marketData?.close ?? 0] as const;
+            })
+        );
+
+        const symbolData = Object.fromEntries(symbolDataEntries);
 
         await Promise.all(
             filteredBots.map(async (bot) => {
@@ -191,12 +209,16 @@ export class AiProcessingService {
 
                     const tickerName = tickers[bot.tickersId];
 
+                    const price = symbolData[bot.tickersId];
+
                     const model = this.getModel(bot.model).bindTools(tools);
 
                     const aiData = await this.aiService.openTrade({
                         model,
                         ticker: tickerName,
-                        customPrompt: bot.customPrompt
+                        customPrompt: bot.customPrompt,
+                        price,
+                        tools
                     });
 
                     if (aiData.error) {
@@ -206,7 +228,24 @@ export class AiProcessingService {
 
                     const { usage, response } = aiData;
 
-                    // TODO обработка ответа
+                    count++;
+
+                    if (response.isTradeOpen && response.trade) {
+                        await this.repository.createTrade(
+                            bot.id,
+                            response.trade,
+                            response.description,
+                            bot.tickersId,
+                            price
+                        );
+
+                        newTrades++;
+                        this.logger.log(`Трейд ${tickerName} создан`);
+                    } else {
+                        await this.repository.passTrade(bot.id, response.description);
+                    }
+
+                    await this.repository.createBotUsage(bot.id, usage, bot.model);
                 });
             })
         );

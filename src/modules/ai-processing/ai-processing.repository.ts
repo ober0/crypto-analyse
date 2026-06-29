@@ -6,7 +6,8 @@ import {
     Models,
     TradeCloseReason,
     TradeStatus,
-    TradeActionType
+    TradeActionType,
+    ProcessingLogsEnum
 } from "@prisma/client";
 import { mapPagination } from "@app/tools/map.pagination";
 import { mapSearch } from "@app/tools/map.search";
@@ -15,6 +16,9 @@ import { PrismaService } from "../prisma/prisma.service";
 import { CreateAiProcessingDto } from "./types/create.dto";
 import { AiProcessingStatsRequestDto } from "./types/stats.dto";
 import { FiltersAiProcessingDto, SearchAiProcessingDto } from "./types/search";
+import { z } from "zod";
+import { tradeSchema } from "../ai/response-schemas/open-trade";
+import { TokenUsage } from "../ai/types/token-usage.type";
 
 const ACTIVE_STATUSES: ProcessingStatus[] = [ProcessingStatus.Ready, ProcessingStatus.Active, ProcessingStatus.InOrder];
 
@@ -322,6 +326,76 @@ export class AiProcessingRepository {
             },
             include: {
                 trades: true
+            }
+        });
+    }
+
+    async createTrade(
+        botId: number,
+        trade: z.infer<typeof tradeSchema>,
+        description: string,
+        tickerId: number,
+        price: number
+    ) {
+        return this.prisma.aiProcessing.update({
+            where: {
+                id: botId
+            },
+            data: {
+                logs: {
+                    create: {
+                        type: ProcessingLogsEnum.TradeOpen,
+                        text: description
+                    }
+                },
+                trades: {
+                    create: {
+                        openDescription: description,
+                        averageEntryPrice: price,
+                        currentPrice: price,
+                        currentSize: trade.size,
+                        tickerId: tickerId,
+                        direction: trade.direction,
+                        stopLoss: trade.stopLoss,
+                        takeProfit: trade.takeProfit,
+                        confidence: trade.confidence,
+                        mainTimeframe: trade.timeframe,
+                        invalidationLevel: trade.invalidationLevel,
+                        liquidityZone: trade.liquidityZone,
+                        actions: {
+                            create: {
+                                type: TradeActionType.Open,
+                                quantity: trade.size,
+                                price,
+                                stopLoss: trade.stopLoss,
+                                takeProfit: trade.takeProfit,
+                                realizedPnl: 0,
+                                comment: trade.reasoning
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    async passTrade(botId: number, description: string) {
+        return this.prisma.processingLogs.create({
+            data: {
+                type: ProcessingLogsEnum.TradePass,
+                text: description,
+                aiProcessingId: botId
+            }
+        });
+    }
+
+    async createBotUsage(botId: number, usage: TokenUsage, model: Models) {
+        return this.prisma.usage.create({
+            data: {
+                aiProcessingId: botId,
+                prompt: usage.prompt_tokens,
+                response: usage.completion_tokens,
+                model
             }
         });
     }

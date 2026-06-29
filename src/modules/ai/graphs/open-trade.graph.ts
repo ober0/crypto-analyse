@@ -1,14 +1,22 @@
 import { Annotation, MessagesAnnotation } from "@langchain/langgraph";
 import { END, START, StateGraph } from "@langchain/langgraph";
 import { TokenUsage } from "../types/token-usage.type";
-import { openTradeFormatInstructions, openTradeParser, OpenTradeResultType } from "../response-schemas/open-trade";
+import { openTradeParser, OpenTradeResultType } from "../response-schemas/open-trade";
 import { ToolsService } from "../services/tools.service";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
 import { ChatOpenAI, ChatOpenAICallOptions } from "@langchain/openai";
 import { extractTokenUsageFromMessage } from "../func/calc-usage.func";
-import { AIMessageChunk } from "@langchain/core/messages";
+import { AIMessageChunk, isAIMessage, ToolCall } from "@langchain/core/messages";
 import { BaseLanguageModelInput } from "@langchain/core/language_models/base";
 import { Runnable } from "@langchain/core/runnables";
+import { StructuredToolInterface } from "@langchain/core/tools";
+import { Logger } from "@nestjs/common";
+
+const logger = new Logger("OpenTradeGraph");
+
+function getValidToolCalls(toolCalls?: ToolCall[]) {
+    return (toolCalls ?? []).filter((call) => call?.name);
+}
 
 export const OpenTradeGraphState = Annotation.Root({
     ...MessagesAnnotation.spec,
@@ -43,14 +51,19 @@ export const OpenTradeGraphState = Annotation.Root({
 });
 
 export function createOpenTradeGraph(toolsService: ToolsService) {
-    const toolNode = new ToolNode([
+    const defaultTools = [
         toolsService.webSearchTool,
         toolsService.marketDataTool,
         toolsService.indicatorsTool
-    ]);
+    ];
 
     return new StateGraph(OpenTradeGraphState)
-        .addNode("tools", toolNode)
+        .addNode("tools", async (state, config) => {
+            const tools = (config.configurable?.tools as StructuredToolInterface[]) ?? defaultTools;
+            const toolNode = new ToolNode(tools, { handleToolErrors: true });
+
+            return toolNode.invoke(state, config);
+        })
         .addNode("llm", async (state, config) => {
             const model = config.configurable?.model as Runnable<
                 BaseLanguageModelInput,
@@ -59,16 +72,20 @@ export function createOpenTradeGraph(toolsService: ToolsService) {
             >;
 
             const response = await model.invoke([...state.messages]);
+            const validToolCalls = getValidToolCalls(response.tool_calls);
+
+            if (validToolCalls.length !== (response.tool_calls?.length ?? 0)) {
+                response.tool_calls = validToolCalls;
+            }
 
             const nodeResult: typeof OpenTradeGraphState.Update = {
                 messages: [response],
                 aiTokensUsage: extractTokenUsageFromMessage(response)
             };
 
-            if (response.tool_calls?.length === 0) {
+            if (!validToolCalls.length) {
                 try {
                     const validateResponse = await openTradeParser.parse(response.text);
-
                     const error = validateResponse.error;
 
                     if (error) {
@@ -79,7 +96,7 @@ export function createOpenTradeGraph(toolsService: ToolsService) {
                         nodeResult.result = validateResponse;
                     }
                 } catch (error) {
-                    this.logger.error(`[ValidateError]: ${error}`);
+                    logger.error(`[ValidateError]: ${error}`);
                     nodeResult.error = "ValidateError";
                     nodeResult.withError = true;
                 }
@@ -87,17 +104,17 @@ export function createOpenTradeGraph(toolsService: ToolsService) {
 
             return nodeResult;
         })
-
         .addEdge(START, "llm")
         .addConditionalEdges("llm", (state) => {
             const last = state.messages.at(-1);
+            const validToolCalls = last && isAIMessage(last) ? getValidToolCalls(last.tool_calls) : [];
 
             if (state.error === "ValidateError") {
                 return "llm";
             }
 
-            // @ts-ignore
-            return last?.tool_calls?.length ? "tools" : END;
+            return validToolCalls.length ? "tools" : END;
         })
+        .addEdge("tools", "llm")
         .compile();
 }

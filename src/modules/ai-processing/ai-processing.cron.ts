@@ -8,23 +8,23 @@ export class AiProcessingCron {
 
     constructor(private readonly service: AiProcessingService) {}
 
-    // onModuleInit() {
-    //     this.actualizeTickerData();
+    onModuleInit() {
+        this.createTrade();
+    }
+
+    // @Cron(CronExpression.EVERY_MINUTE)
+    // async actualizeTickerData() {
+    //     this.logger.debug("Actualizing ticket data start");
+    //     await this.service.actualizeTickerData();
+    //     this.logger.debug("Actualizing ticket data end");
     // }
-
-    @Cron(CronExpression.EVERY_MINUTE)
-    async actualizeTickerData() {
-        this.logger.debug("Actualizing ticket data start");
-        await this.service.actualizeTickerData();
-        this.logger.debug("Actualizing ticket data end");
-    }
-
-    @Cron("*/5 * * * *")
-    async closeBot() {
-        this.logger.debug("Close bots process start");
-        await this.service.closeBots();
-        this.logger.debug("Close bots process end");
-    }
+    //
+    // @Cron("*/5 * * * *")
+    // async closeBot() {
+    //     this.logger.debug("Close bots process start");
+    //     await this.service.closeBots();
+    //     this.logger.debug("Close bots process end");
+    // }
 
     @Cron("*/5 * * * *")
     async createTrade() {
