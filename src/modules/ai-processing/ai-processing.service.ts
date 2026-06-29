@@ -8,6 +8,8 @@ import { ToolsService } from "../ai/services/tools.service";
 import { AiService } from "../ai/services/ai.service";
 import { ChatOpenAI } from "@langchain/openai";
 import { deepseekChat, llamaChat, openAiChat } from "../ai/models/models";
+import { Decimal } from "@prisma/client/runtime/library";
+import { ManageBotActionEnum } from "../ai/response-schemas/close-trade";
 
 @Injectable()
 export class AiProcessingService {
@@ -155,6 +157,10 @@ export class AiProcessingService {
 
         await Promise.all(
             bots.map(async (bot) => {
+                if (bot.endAt && bot.endAt?.getTime() > Date.now()) {
+                    return;
+                }
+
                 if (bot.trades.some((trade) => trade.status === TradeStatus.Open)) {
                     return;
                 }
@@ -168,7 +174,7 @@ export class AiProcessingService {
         const bots = await this.repository.getAllActiveBots();
 
         const filteredBots = bots.filter((bot) => {
-            if (bot.lastCheckAt && bot.lastCheckAt > new Date()) {
+            if (bot.nextCheckAt && bot.nextCheckAt > new Date()) {
                 return false;
             }
             return true;
@@ -245,10 +251,19 @@ export class AiProcessingService {
                         await this.repository.passTrade(bot.id, response.description);
                     }
 
-                    await this.repository.createBotUsage(bot.id, usage, bot.model);
+                    await Promise.all([
+                        this.repository.updateCheck(
+                            bot.id,
+                            new Date(),
+                            new Date(Date.now() + bot.checkIntervalMins * 60 * 1000)
+                        ),
+                        this.repository.createBotUsage(bot.id, usage, bot.model)
+                    ]);
                 });
             })
         );
+
+        this.logger.log(`Обработано ${count}, сделок ${newTrades} (открытие)`);
     }
 
     private getModel(model: Models): ChatOpenAI {
@@ -260,5 +275,158 @@ export class AiProcessingService {
             case Models.Llama4:
                 return llamaChat;
         }
+    }
+
+    async processTrades() {
+        const trades = await this.repository.getAllActiveTradesWithRelations();
+
+        const filteredTrades = trades.filter((trade) => {
+            if (trade.aiProcessing.nextCheckAt && trade.aiProcessing.nextCheckAt > new Date()) {
+                return false;
+            }
+            return true;
+        });
+
+        const tickersEntities = await this.tickerService.getAll();
+
+        const tickers = Object.fromEntries(tickersEntities.map(({ id, name }) => [id, name]));
+
+        const limit = pLimit(10);
+
+        let count: number = 0;
+
+        const symbolDataEntries = await Promise.all(
+            tickersEntities.map(async (ticker) => {
+                const marketData = await this.marketDataService
+                    .getSymbolData({
+                        interval: "1",
+                        candles: 1,
+                        symbol: ticker.name
+                    })
+                    .then((el) => el.at(0));
+
+                return [ticker.id, marketData?.close ?? 0] as const;
+            })
+        );
+
+        const symbolData = Object.fromEntries(symbolDataEntries);
+
+        await Promise.all(
+            filteredTrades.map(async (trade) => {
+                return limit(async () => {
+                    const tools = [this.toolsService.indicatorsTool, this.toolsService.marketDataTool];
+                    if (trade.aiProcessing.withWebSearch) {
+                        tools.push(this.toolsService.webSearchTool);
+                    }
+
+                    const tickerName = tickers[trade.aiProcessing.tickersId];
+
+                    const price = symbolData[trade.aiProcessing.tickersId];
+
+                    const model = this.getModel(trade.aiProcessing.model).bindTools(tools);
+
+                    const normalizeTrade = (value: unknown) => {
+                        if (value instanceof Decimal) {
+                            return Number(value);
+                        }
+
+                        if (Array.isArray(value)) {
+                            return value.map(normalizeTrade);
+                        }
+
+                        if (value !== null && typeof value === "object") {
+                            Object.entries(value).forEach(([key, val]) => {
+                                (value as Record<string, unknown>)[key] = normalizeTrade(val);
+                            });
+                        }
+
+                        return value;
+                    };
+
+                    const normalTrade = normalizeTrade(trade);
+
+                    const aiData = await this.aiService.processTrade({
+                        trade: normalTrade,
+                        model,
+                        ticker: tickerName,
+                        customPrompt: trade.aiProcessing.customPrompt,
+                        price,
+                        tools
+                    });
+
+                    if (aiData.error || !aiData.response.action) {
+                        this.logger.error(aiData.error ?? "Нет действия");
+                        return;
+                    }
+
+                    const { usage, response } = aiData;
+                    const { action, ...rest } = response;
+
+                    count++;
+
+                    if (action?.action === ManageBotActionEnum.HOLD) {
+                        await this.repository.passTrade(trade.aiProcessingId, action.reasoning);
+                    } else if (action?.action === ManageBotActionEnum.CLOSE) {
+                        const pnl =
+                            normalTrade.currentSize *
+                            ((price - normalTrade.averageEntryPrice) *
+                                (trade.direction === TradeDirection.Long ? 1 : -1));
+
+                        await this.repository.closeTrade(trade.id, {
+                            closeReason: "Signal",
+                            description: action.reasoning,
+                            size: normalTrade.currentSize,
+                            price,
+                            pnl
+                        });
+                    } else if (action?.action === ManageBotActionEnum.ADD_POSITION && action.addPercent) {
+                        const addSize = normalTrade.currentSize * (action.addPercent / 100);
+                        const totalSize = normalTrade.currentSize + addSize;
+                        const avgPrice = normalTrade.currentSize * normalTrade.averageEntryPrice + addSize * price;
+
+                        await this.repository.addTrade(trade.id, {
+                            description: action.reasoning,
+                            size: totalSize,
+                            newSize: addSize,
+                            price,
+                            avgPrice: avgPrice
+                        });
+                    } else if (action?.action === ManageBotActionEnum.PARTIAL_CLOSE && action.closePercent) {
+                        const sellSize = normalTrade.currentSize * (action.closePercent / 100);
+                        const totalSize = normalTrade.currentSize - sellSize;
+
+                        await this.repository.partialSellTrade(trade.id, {
+                            description: action.reasoning,
+                            size: totalSize,
+                            newSize: sellSize,
+                            price
+                        });
+                    }
+
+                    if (action?.updateStopLoss || action?.updateTakeProfit) {
+                        const newTP = action.takeProfit ?? Number(trade.takeProfit);
+                        const newSL = action.stopLoss ?? Number(trade.stopLoss);
+
+                        await this.repository.updateSlTp(
+                            trade.id,
+                            newTP,
+                            newSL,
+                            Number(trade.takeProfit),
+                            Number(trade.stopLoss)
+                        );
+                    }
+
+                    await Promise.all([
+                        this.repository.updateCheck(
+                            trade.aiProcessing.id,
+                            new Date(),
+                            new Date(Date.now() + trade.aiProcessing.checkIntervalMins * 60 * 1000)
+                        ),
+                        this.repository.createBotUsage(trade.aiProcessing.id, usage, trade.aiProcessing.model)
+                    ]);
+                });
+            })
+        );
+        this.logger.log(`Обработано ${count} (процессинг)`);
     }
 }

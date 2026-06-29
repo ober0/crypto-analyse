@@ -82,4 +82,8 @@ export class AiProcessingCrudService {
 
         return this.repository.delete(id);
     }
+
+    async getUsageByModel() {
+        return this.repository.getUsageByModel();
+    }
 }

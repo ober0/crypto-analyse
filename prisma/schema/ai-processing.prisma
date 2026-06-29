@@ -67,7 +67,7 @@ model ProcessingLogs {
   type ProcessingLogsEnum
   text String?
 
-  aiProcessing   AiProcessing @relation(fields: [aiProcessingId], references: [id])
+  aiProcessing   AiProcessing @relation(fields: [aiProcessingId], references: [id], onDelete: Cascade)
   aiProcessingId Int
 
   createdAt DateTime @default(now())
@@ -93,10 +93,8 @@ enum TradeActionType {
   Open
   Buy
   Sell
-  Partial_close
-  Change_stop_loss
-  Change_take_profit
-  Close
+  Change_sl_tp
+  PartialSell
 
   @@map("trade_action_type")
 }
@@ -170,11 +168,11 @@ model TradeAction {
 
   price Decimal? @db.Decimal(32, 16)
 
-  stopLoss Decimal? @db.Decimal(32, 16)
+  stopLoss    Decimal? @db.Decimal(32, 16)
+  oldStopLoss Decimal? @db.Decimal(32, 16)
 
-  takeProfit Decimal? @db.Decimal(32, 16)
-
-  realizedPnl Decimal? @db.Decimal(32, 16)
+  takeProfit    Decimal? @db.Decimal(32, 16)
+  oldTakeProfit Decimal? @db.Decimal(32, 16)
 
   comment String?
 

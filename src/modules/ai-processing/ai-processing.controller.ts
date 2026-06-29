@@ -19,6 +19,7 @@ import { CreateAiProcessingDto } from "./types/create.dto";
 import { AiProcessingDetailResponseDto, AiProcessingResponseDto } from "./types/response.dto";
 import { AiProcessingSearchResponseDto, SearchAiProcessingDto } from "./types/search";
 import { AiProcessingStatsRequestDto, AiProcessingStatsResponseDto } from "./types/stats.dto";
+import { UsageByModelItemDto } from "../ticker-results/types/usage";
 
 @Controller("ai-processing")
 @ApiTags("AI Processing")
@@ -96,5 +97,13 @@ export class AiProcessingController {
     @ApiOkResponse({ type: AiProcessingResponseDto })
     async delete(@DecodeUser() user: UserBaseDto, @Param("id", ParseIntPipe) id: number) {
         return this.service.delete(user.id, id);
+    }
+
+    @Get("usage/total")
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: "получение использованных токенов с группировкой по моделям" })
+    @ApiOkResponse({ type: UsageByModelItemDto, isArray: true })
+    async getUsageByModel() {
+        return this.service.getUsageByModel();
     }
 }

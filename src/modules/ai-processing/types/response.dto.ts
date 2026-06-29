@@ -81,10 +81,13 @@ export class TradeActionResponseDto {
     stopLoss?: number | null;
 
     @ApiProperty({ required: false, type: Number })
+    oldStopLoss?: number | null;
+
+    @ApiProperty({ required: false, type: Number })
     takeProfit?: number | null;
 
     @ApiProperty({ required: false, type: Number })
-    realizedPnl?: number | null;
+    oldTakeProfit?: number | null;
 
     @ApiProperty({ required: false, type: String })
     comment?: string | null;

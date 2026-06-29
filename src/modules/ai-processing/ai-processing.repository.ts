@@ -49,7 +49,9 @@ export class AiProcessingRepository {
         const item = await this.prisma.aiProcessing.findFirst({
             where: { id, userId },
             include: {
-                ticker: true
+                ticker: true,
+                logs: true,
+                usage: true
             }
         });
 
@@ -294,31 +296,6 @@ export class AiProcessingRepository {
         });
     }
 
-    async closeTrade(
-        id: number,
-        data: { closeReason: TradeCloseReason; description: string; size: number; price: number; pnl: number }
-    ) {
-        await this.prisma.trade.update({
-            where: {
-                id
-            },
-            data: {
-                closeReason: data.closeReason,
-                closeDescription: data.description,
-                status: TradeStatus.Closed,
-                actions: {
-                    create: {
-                        type: TradeActionType.Close,
-                        comment: data.description,
-                        price: data.price,
-                        realizedPnl: data.pnl,
-                        quantity: data.size
-                    }
-                }
-            }
-        });
-    }
-
     async getAllActiveBots() {
         return this.prisma.aiProcessing.findMany({
             where: {
@@ -326,55 +303,6 @@ export class AiProcessingRepository {
             },
             include: {
                 trades: true
-            }
-        });
-    }
-
-    async createTrade(
-        botId: number,
-        trade: z.infer<typeof tradeSchema>,
-        description: string,
-        tickerId: number,
-        price: number
-    ) {
-        return this.prisma.aiProcessing.update({
-            where: {
-                id: botId
-            },
-            data: {
-                logs: {
-                    create: {
-                        type: ProcessingLogsEnum.TradeOpen,
-                        text: description
-                    }
-                },
-                trades: {
-                    create: {
-                        openDescription: description,
-                        averageEntryPrice: price,
-                        currentPrice: price,
-                        currentSize: trade.size,
-                        tickerId: tickerId,
-                        direction: trade.direction,
-                        stopLoss: trade.stopLoss,
-                        takeProfit: trade.takeProfit,
-                        confidence: trade.confidence,
-                        mainTimeframe: trade.timeframe,
-                        invalidationLevel: trade.invalidationLevel,
-                        liquidityZone: trade.liquidityZone,
-                        actions: {
-                            create: {
-                                type: TradeActionType.Open,
-                                quantity: trade.size,
-                                price,
-                                stopLoss: trade.stopLoss,
-                                takeProfit: trade.takeProfit,
-                                realizedPnl: 0,
-                                comment: trade.reasoning
-                            }
-                        }
-                    }
-                }
             }
         });
     }
@@ -398,5 +326,222 @@ export class AiProcessingRepository {
                 model
             }
         });
+    }
+
+    async getAllActiveTradesWithRelations() {
+        return this.prisma.trade.findMany({
+            where: {
+                status: "Open"
+            },
+            include: {
+                aiProcessing: true,
+                actions: true
+            }
+        });
+    }
+
+    async updateCheck(id: number, last: Date, next: Date) {
+        await this.prisma.aiProcessing.update({
+            where: {
+                id
+            },
+            data: {
+                lastCheckAt: last,
+                nextCheckAt: next
+            }
+        });
+    }
+
+    async closeTrade(
+        id: number,
+        data: { closeReason: TradeCloseReason; description: string; size: number; price: number; pnl?: number }
+    ) {
+        await this.prisma.trade.update({
+            where: {
+                id
+            },
+            data: {
+                aiProcessing: {
+                    update: {
+                        status: "Active",
+                        logs: {
+                            create: {
+                                type: ProcessingLogsEnum.TradeClose,
+                                text: data.description
+                            }
+                        }
+                    }
+                },
+                closeReason: data.closeReason,
+                closeDescription: data.description,
+                status: TradeStatus.Closed,
+                pnl: data.pnl,
+                actions: {
+                    create: {
+                        type: TradeActionType.Sell,
+                        comment: data.description,
+                        price: data.price,
+                        quantity: data.size
+                    }
+                }
+            }
+        });
+    }
+
+    async createTrade(
+        botId: number,
+        trade: z.infer<typeof tradeSchema>,
+        description: string,
+        tickerId: number,
+        price: number
+    ) {
+        return this.prisma.aiProcessing.update({
+            where: {
+                id: botId
+            },
+            data: {
+                status: "InOrder",
+                logs: {
+                    create: {
+                        type: ProcessingLogsEnum.TradeOpen,
+                        text: description
+                    }
+                },
+                trades: {
+                    create: {
+                        openDescription: description,
+                        averageEntryPrice: price,
+                        currentPrice: price,
+                        currentSize: trade.size,
+                        tickerId: tickerId,
+                        direction: trade.direction,
+                        stopLoss: trade.stopLoss,
+                        takeProfit: trade.takeProfit,
+                        confidence: trade.confidence,
+                        mainTimeframe: trade.timeframe,
+                        invalidationLevel: trade.invalidationLevel,
+                        liquidityZone: trade.liquidityZone,
+                        status: "Open",
+                        actions: {
+                            create: {
+                                type: TradeActionType.Open,
+                                quantity: trade.size,
+                                price,
+                                stopLoss: trade.stopLoss,
+                                takeProfit: trade.takeProfit,
+                                comment: trade.reasoning
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    async addTrade(
+        id: number,
+        data: { description: string; size: number; newSize: number; price: number; avgPrice: number }
+    ) {
+        return this.prisma.trade.update({
+            where: {
+                id
+            },
+            data: {
+                currentPrice: data.price,
+                averageEntryPrice: data.avgPrice,
+                currentSize: data.size,
+                aiProcessing: {
+                    update: {
+                        status: "InOrder",
+                        logs: {
+                            create: {
+                                type: ProcessingLogsEnum.TradeActive,
+                                text: data.description
+                            }
+                        }
+                    }
+                },
+                actions: {
+                    create: {
+                        type: TradeActionType.Buy,
+                        quantity: data.newSize,
+                        price: data.price
+                    }
+                }
+            }
+        });
+    }
+
+    async partialSellTrade(id: number, data: { description: string; size: number; newSize: number; price: number }) {
+        return this.prisma.trade.update({
+            where: {
+                id
+            },
+            data: {
+                currentPrice: data.price,
+                currentSize: data.size,
+                aiProcessing: {
+                    update: {
+                        status: "InOrder",
+                        logs: {
+                            create: {
+                                type: ProcessingLogsEnum.TradeActive,
+                                text: data.description
+                            }
+                        }
+                    }
+                },
+                actions: {
+                    create: {
+                        type: TradeActionType.PartialSell,
+                        quantity: data.newSize,
+                        price: data.price
+                    }
+                }
+            }
+        });
+    }
+
+    async updateSlTp(id: number, newTP: number, newSL: number, oldTP: number, oldSL: number) {
+        return this.prisma.trade.update({
+            where: {
+                id
+            },
+            data: {
+                takeProfit: newTP,
+                stopLoss: newSL,
+                actions: {
+                    create: {
+                        type: TradeActionType.Change_sl_tp,
+                        stopLoss: newSL,
+                        oldStopLoss: oldSL,
+                        takeProfit: newTP,
+                        oldTakeProfit: oldTP
+                    }
+                }
+            }
+        });
+    }
+
+    async getUsageByModel() {
+        const data = await this.prisma.usage.groupBy({
+            where: {
+                aiProcessing: {
+                    isNot: null
+                }
+            },
+            by: ["model"],
+            _sum: {
+                prompt: true,
+                response: true
+            }
+        });
+
+        return data.map((x) => ({
+            model: x.model,
+            prompt: x._sum.prompt ?? 0,
+            response: x._sum.response ?? 0,
+            total: (x._sum.prompt ?? 0) + (x._sum.response ?? 0)
+        }));
     }
 }

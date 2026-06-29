@@ -11,15 +11,21 @@ import { OpenTradePrompt } from "../prompts/open-trade";
 import { openTradeFormatInstructions, OpenTradeResultType } from "../response-schemas/open-trade";
 import { BaseLanguageModelInput } from "@langchain/core/language_models/base";
 import { TokenUsage } from "../types/token-usage.type";
+import { createCloseTradeGraph } from "../graphs/close-trade.graph";
+import { closeTradeFormatInstructions, CloseTradeResultType } from "../response-schemas/close-trade";
+import { CloseTradePrompt } from "../prompts/close-trade";
+import { TradeResponseDto } from "../../ai-processing/types/response.dto";
 
 @Injectable()
 export class AiService {
     private logger = new Logger("AiService");
 
     readonly openTradeGraph: ReturnType<typeof createOpenTradeGraph>;
+    readonly closeTradeGraph: ReturnType<typeof createCloseTradeGraph>;
 
     constructor(private readonly toolsService: ToolsService) {
         this.openTradeGraph = createOpenTradeGraph(this.toolsService);
+        this.closeTradeGraph = createCloseTradeGraph(this.toolsService);
     }
 
     private parseNode = <T extends z.ZodObject>(parser: StructuredOutputParser<T>) =>
@@ -92,8 +98,74 @@ export class AiService {
             }
         );
 
-        // FIXME удалить
-        console.log(response);
+        return {
+            error: response.withError ? response.error : null,
+            usage: response.aiTokensUsage,
+            response: response.result
+        };
+    }
+
+    async processTrade({
+        trade,
+        ticker,
+        model,
+        customPrompt,
+        price,
+        tools
+    }: {
+        trade: TradeResponseDto;
+        ticker: string;
+        customPrompt?: string | null;
+        model: Runnable<BaseLanguageModelInput, AIMessageChunk, ChatOpenAICallOptions>;
+        price: number;
+        tools?: StructuredToolInterface[];
+    }): Promise<{ usage: TokenUsage; response: CloseTradeResultType; error: string | null }> {
+        const inputData = `Тикер: ${ticker}, Дата: ${new Date().toISOString()}. Актуальная цена ${price}
+         Пожелания пользователя ${customPrompt ?? "отсутствуют"}`;
+
+        const deal = {
+            mainTimeframe: trade.mainTimeframe,
+            invalidationLevel: trade.invalidationLevel,
+            liquidityZone: trade.liquidityZone,
+            direction: trade.direction,
+            currentSize: trade.currentSize,
+            averageEntryPrice: trade.averageEntryPrice,
+            currentPrice: price,
+            stopLoss: trade.stopLoss,
+            takeProfit: trade.takeProfit,
+            pnl: trade.pnl,
+            actions: trade.actions.map((el) => ({
+                type: el.type,
+                quantity: el.quantity,
+                price: el.price,
+                stopLoss: el.stopLoss,
+                oldStopLoss: el.oldStopLoss,
+                takeProfit: el.takeProfit,
+                oldTakeProfit: el.oldTakeProfit,
+                comment: el.comment,
+                date: el.createdAt
+            }))
+        };
+
+        const dealMessage = `Текущая сделка: ${JSON.stringify(deal)}`;
+
+        const response = await this.closeTradeGraph.invoke(
+            {
+                messages: [
+                    new SystemMessage(CloseTradePrompt),
+                    new SystemMessage(closeTradeFormatInstructions),
+                    new HumanMessage(inputData),
+                    new HumanMessage(dealMessage)
+                ]
+            },
+            {
+                configurable: {
+                    model,
+                    ticker,
+                    tools
+                }
+            }
+        );
 
         return {
             error: response.withError ? response.error : null,
