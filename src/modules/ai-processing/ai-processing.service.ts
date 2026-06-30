@@ -201,7 +201,13 @@ export class AiProcessingService {
 
                 return [ticker.id, marketData?.close ?? 0] as const;
             })
-        );
+        ).catch((err) => {
+            this.logger.error(err);
+        });
+
+        if (!symbolDataEntries) {
+            return;
+        }
 
         const symbolData = Object.fromEntries(symbolDataEntries);
 
@@ -219,13 +225,20 @@ export class AiProcessingService {
 
                     const model = this.getModel(bot.model).bindTools(tools);
 
-                    const aiData = await this.aiService.openTrade({
-                        model,
-                        ticker: tickerName,
-                        customPrompt: bot.customPrompt,
-                        price,
-                        tools
-                    });
+                    let aiData;
+
+                    try {
+                        aiData = await this.aiService.openTrade({
+                            model,
+                            ticker: tickerName,
+                            customPrompt: bot.customPrompt,
+                            price,
+                            tools
+                        });
+                    } catch (err) {
+                        this.logger.error(err);
+                        return;
+                    }
 
                     if (aiData.error) {
                         this.logger.error(aiData.error);
@@ -307,7 +320,13 @@ export class AiProcessingService {
 
                 return [ticker.id, marketData?.close ?? 0] as const;
             })
-        );
+        ).catch((err) => {
+            this.logger.error(err);
+        });
+
+        if (!symbolDataEntries) {
+            return;
+        }
 
         const symbolData = Object.fromEntries(symbolDataEntries);
 
@@ -345,14 +364,21 @@ export class AiProcessingService {
 
                     const normalTrade = normalizeTrade(trade);
 
-                    const aiData = await this.aiService.processTrade({
-                        trade: normalTrade,
-                        model,
-                        ticker: tickerName,
-                        customPrompt: trade.aiProcessing.customPrompt,
-                        price,
-                        tools
-                    });
+                    let aiData;
+
+                    try {
+                        aiData = await this.aiService.processTrade({
+                            trade: normalTrade,
+                            model,
+                            ticker: tickerName,
+                            customPrompt: trade.aiProcessing.customPrompt,
+                            price,
+                            tools
+                        });
+                    } catch (err) {
+                        this.logger.error(err);
+                        return;
+                    }
 
                     if (aiData.error || !aiData.response.action) {
                         this.logger.error(aiData.error ?? "Нет действия");
