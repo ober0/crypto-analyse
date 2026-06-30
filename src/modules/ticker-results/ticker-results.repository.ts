@@ -97,7 +97,16 @@ export class TickerResultsRepository {
     async getUsageByModel() {
         const data = await this.prisma.usage.groupBy({
             where: {
-                type: UsageType.TickerProcessing
+                OR: [
+                    {
+                        type: UsageType.TickerProcessing
+                    },
+                    {
+                        tickerProcessing: {
+                            isNot: null
+                        }
+                    }
+                ]
             },
             by: ["model"],
             _sum: {

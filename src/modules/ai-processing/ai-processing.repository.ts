@@ -529,7 +529,16 @@ export class AiProcessingRepository {
     async getUsageByModel() {
         const data = await this.prisma.usage.groupBy({
             where: {
-                type: UsageType.BotProcessing
+                OR: [
+                    {
+                        type: UsageType.BotProcessing
+                    },
+                    {
+                        aiProcessing: {
+                            isNot: null
+                        }
+                    }
+                ]
             },
             by: ["model"],
             _sum: {
