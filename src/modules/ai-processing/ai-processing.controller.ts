@@ -20,11 +20,10 @@ import { AiProcessingDetailResponseDto, AiProcessingResponseDto } from "./types/
 import { AiProcessingSearchResponseDto, SearchAiProcessingDto } from "./types/search";
 import { AiProcessingStatsRequestDto, AiProcessingStatsResponseDto } from "./types/stats.dto";
 import { UsageByModelItemDto } from "../ticker-results/types/usage";
+import { AdminGuard } from "../auth/guards/admin.guard";
 
 @Controller("ai-processing")
 @ApiTags("AI Processing")
-@ApiSecurity("bearer")
-@UseGuards(JwtAuthGuardHttp)
 export class AiProcessingController {
     constructor(private readonly service: AiProcessingCrudService) {}
 
@@ -32,6 +31,8 @@ export class AiProcessingController {
     @HttpCode(HttpStatus.CREATED)
     @ApiOperation({ summary: "Создать Торгового бота" })
     @ApiOkResponse({ type: AiProcessingResponseDto })
+    @ApiSecurity("bearer")
+    @UseGuards(JwtAuthGuardHttp, AdminGuard)
     async create(
         @DecodeUser() user: UserBaseDto,
         @Body() dto: CreateAiProcessingDto
@@ -43,34 +44,30 @@ export class AiProcessingController {
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: "Поиск Торгового бота" })
     @ApiOkResponse({ type: AiProcessingSearchResponseDto })
-    async search(
-        @DecodeUser() user: UserBaseDto,
-        @Body() dto: SearchAiProcessingDto
-    ): Promise<AiProcessingSearchResponseDto> {
-        return this.service.search(user.id, dto);
+    async search(@Body() dto: SearchAiProcessingDto): Promise<AiProcessingSearchResponseDto> {
+        return this.service.search(dto);
     }
 
     @Post("stats")
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: "Статистика Торгового бота" })
     @ApiOkResponse({ type: AiProcessingStatsResponseDto })
-    async getStats(
-        @DecodeUser() user: UserBaseDto,
-        @Body() dto: AiProcessingStatsRequestDto
-    ): Promise<AiProcessingStatsResponseDto> {
-        return this.service.getStats(user.id, dto);
+    async getStats(@Body() dto: AiProcessingStatsRequestDto): Promise<AiProcessingStatsResponseDto> {
+        return this.service.getStats(dto);
     }
 
     @Get(":id")
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: "Детальный просмотр Торгового бота" })
     @ApiOkResponse({ type: AiProcessingDetailResponseDto })
-    async findOne(@DecodeUser() user: UserBaseDto, @Param("id", ParseIntPipe) id: number) {
-        return this.service.findOne(user.id, id);
+    async findOne(@Param("id", ParseIntPipe) id: number) {
+        return this.service.findOne(id);
     }
 
     @Post(":id/enable")
     @HttpCode(HttpStatus.OK)
+    @ApiSecurity("bearer")
+    @UseGuards(JwtAuthGuardHttp, AdminGuard)
     @ApiOperation({ summary: "Включить Торгового бота" })
     @ApiOkResponse({ type: AiProcessingResponseDto })
     async enable(
@@ -82,6 +79,8 @@ export class AiProcessingController {
 
     @Post(":id/disable")
     @HttpCode(HttpStatus.OK)
+    @ApiSecurity("bearer")
+    @UseGuards(JwtAuthGuardHttp, AdminGuard)
     @ApiOperation({ summary: "Выключить Торгового бота" })
     @ApiOkResponse({ type: AiProcessingResponseDto })
     async disable(
@@ -93,6 +92,8 @@ export class AiProcessingController {
 
     @Delete(":id")
     @HttpCode(HttpStatus.OK)
+    @ApiSecurity("bearer")
+    @UseGuards(JwtAuthGuardHttp, AdminGuard)
     @ApiOperation({ summary: "удалить торгового бота" })
     @ApiOkResponse({ type: AiProcessingResponseDto })
     async delete(@DecodeUser() user: UserBaseDto, @Param("id", ParseIntPipe) id: number) {
@@ -101,6 +102,8 @@ export class AiProcessingController {
 
     @Get("usage/total")
     @HttpCode(HttpStatus.OK)
+    @ApiSecurity("bearer")
+    @UseGuards(JwtAuthGuardHttp, AdminGuard)
     @ApiOperation({ summary: "получение использованных токенов с группировкой по моделям" })
     @ApiOkResponse({ type: UsageByModelItemDto, isArray: true })
     async getUsageByModel() {

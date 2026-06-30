@@ -4,11 +4,10 @@ import { ApiOkResponse, ApiOperation, ApiSecurity, ApiTags } from "@nestjs/swagg
 import { SearchTickerResultsDto, TickerResultsSearchResponseDto } from "./types/search";
 import { JwtAuthGuardHttp } from "../auth/guards/auth.guard";
 import { UsageByModelItemDto } from "./types/usage";
+import { AdminGuard } from "../auth/guards/admin.guard";
 
 @Controller("ticker-results")
 @ApiTags("Ticker Results")
-@ApiSecurity("bearer")
-@UseGuards(JwtAuthGuardHttp)
 export class TickerResultsController {
     constructor(private readonly service: TickerResultsService) {}
 
@@ -22,6 +21,8 @@ export class TickerResultsController {
 
     @Get("usage/total")
     @HttpCode(HttpStatus.OK)
+    @ApiSecurity("bearer")
+    @UseGuards(JwtAuthGuardHttp, AdminGuard)
     @ApiOperation({ summary: "получение использованных токенов с группировкой по моделям" })
     @ApiOkResponse({ type: UsageByModelItemDto, isArray: true })
     async getUsageByModel() {

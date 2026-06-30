@@ -9,8 +9,6 @@ import { StatisticsResponseDto } from "./dto/response";
 
 @Controller("statistics")
 @ApiTags("Statistics")
-@UseGuards(JwtAuthGuardHttp, AdminGuard)
-@ApiSecurity("bearer")
 export class StatisticsController {
     constructor(private readonly service: StatisticsService) {}
 

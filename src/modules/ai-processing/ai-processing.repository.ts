@@ -46,9 +46,9 @@ export class AiProcessingRepository {
         });
     }
 
-    async findByIdForUser(id: number, userId: number) {
+    async findById(id: number) {
         const item = await this.prisma.aiProcessing.findFirst({
-            where: { id, userId },
+            where: { id },
             include: {
                 ticker: true,
                 logs: true
@@ -62,8 +62,8 @@ export class AiProcessingRepository {
         return item;
     }
 
-    async findOne(id: number, userId: number) {
-        const item = await this.findByIdForUser(id, userId);
+    async findOne(id: number) {
+        const item = await this.findById(id);
 
         const trades = await this.prisma.trade.findMany({
             where: { aiProcessingId: item.id },
@@ -127,9 +127,9 @@ export class AiProcessingRepository {
         });
     }
 
-    buildWhere(userId: number, filters?: FiltersAiProcessingDto): Prisma.AiProcessingWhereInput {
+    buildWhere(filters?: FiltersAiProcessingDto): Prisma.AiProcessingWhereInput {
         if (!filters) {
-            return { userId };
+            return {};
         }
 
         const { statuses, status, model, interval, ...rest } = filters;
@@ -153,12 +153,11 @@ export class AiProcessingRepository {
             mapped.interval = interval;
         }
 
-        return { userId, ...mapped };
+        return mapped;
     }
 
-    async getStats(userId: number, dto: AiProcessingStatsRequestDto) {
+    async getStats(dto: AiProcessingStatsRequestDto) {
         const where: Prisma.AiProcessingWhereInput = {
-            userId,
             ...(dto.tickersId ? { tickersId: dto.tickersId } : {}),
             ...(dto.status ? { status: dto.status } : {})
         };
@@ -186,9 +185,9 @@ export class AiProcessingRepository {
         };
     }
 
-    async search(userId: number, dto: SearchAiProcessingDto) {
+    async search(dto: SearchAiProcessingDto) {
         const items = await this.prisma.aiProcessing.findMany({
-            where: this.buildWhere(userId, dto.filters),
+            where: this.buildWhere(dto.filters),
             orderBy: mapSort(dto.sorts),
             ...mapPagination(dto.pagination),
             include: {
@@ -264,9 +263,9 @@ export class AiProcessingRepository {
         });
     }
 
-    async count(userId: number, dto: SearchAiProcessingDto): Promise<number> {
+    async count(dto: SearchAiProcessingDto): Promise<number> {
         return this.prisma.aiProcessing.count({
-            where: this.buildWhere(userId, dto.filters)
+            where: this.buildWhere(dto.filters)
         });
     }
 

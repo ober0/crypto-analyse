@@ -29,7 +29,11 @@ export class AiProcessingCrudService {
     }
 
     async enable(userId: number, id: number): Promise<AiProcessingResponseDto> {
-        const item = await this.repository.findByIdForUser(id, userId);
+        const item = await this.repository.findById(id);
+
+        if (item.userId !== userId) {
+            throw new NotFoundException();
+        }
 
         if (([ProcessingStatus.End, ProcessingStatus.Error] as string[]).includes(item.status)) {
             throw new BadRequestException("Завершённого бота нельзя включить");
@@ -43,7 +47,7 @@ export class AiProcessingCrudService {
     }
 
     async disable(userId: number, id: number): Promise<AiProcessingResponseDto> {
-        const item = await this.repository.findByIdForUser(id, userId);
+        const item = await this.repository.findById(id);
 
         if (item.status === ProcessingStatus.Ready) {
             throw new BadRequestException("бот не запущен");
@@ -56,27 +60,24 @@ export class AiProcessingCrudService {
         return this.repository.disable(id);
     }
 
-    async getStats(userId: number, dto: AiProcessingStatsRequestDto): Promise<AiProcessingStatsResponseDto> {
-        return this.repository.getStats(userId, dto);
+    async getStats(dto: AiProcessingStatsRequestDto): Promise<AiProcessingStatsResponseDto> {
+        return this.repository.getStats(dto);
     }
 
-    async search(userId: number, dto: SearchAiProcessingDto): Promise<AiProcessingSearchResponseDto> {
-        const [data, count] = await Promise.all([
-            this.repository.search(userId, dto),
-            this.repository.count(userId, dto)
-        ]);
+    async search(dto: SearchAiProcessingDto): Promise<AiProcessingSearchResponseDto> {
+        const [data, count] = await Promise.all([this.repository.search(dto), this.repository.count(dto)]);
 
         return { data, count };
     }
 
-    async findOne(userId: number, id: number) {
-        return this.repository.findOne(id, userId);
+    async findOne(id: number) {
+        return this.repository.findOne(id);
     }
 
     async delete(userId: number, id: number) {
-        const bot = await this.repository.findOne(id, userId);
+        const bot = await this.repository.findOne(id);
 
-        if (!bot) {
+        if (!bot || bot.userId !== userId) {
             throw new NotFoundException("Бот не найден");
         }
 

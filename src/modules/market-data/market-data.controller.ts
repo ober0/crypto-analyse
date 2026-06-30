@@ -7,8 +7,6 @@ import { GetMarketDataDto } from "./dto/get-symbol-data.dto";
 
 @Controller("market-data")
 @ApiTags("Market Data")
-@ApiSecurity("bearer")
-@UseGuards(JwtAuthGuardHttp)
 export class MarketDataController {
     constructor(private readonly marketDataService: MarketDataService) {}
 
