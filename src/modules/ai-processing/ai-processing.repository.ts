@@ -7,7 +7,8 @@ import {
     TradeCloseReason,
     TradeStatus,
     TradeActionType,
-    ProcessingLogsEnum
+    ProcessingLogsEnum,
+    UsageType
 } from "@prisma/client";
 import { mapPagination } from "@app/tools/map.pagination";
 import { mapSearch } from "@app/tools/map.search";
@@ -319,6 +320,7 @@ export class AiProcessingRepository {
     async createBotUsage(botId: number, usage: TokenUsage, model: Models) {
         return this.prisma.usage.create({
             data: {
+                type: UsageType.BotProcessing,
                 aiProcessingId: botId,
                 prompt: usage.prompt_tokens,
                 response: usage.completion_tokens,
@@ -527,9 +529,7 @@ export class AiProcessingRepository {
     async getUsageByModel() {
         const data = await this.prisma.usage.groupBy({
             where: {
-                aiProcessing: {
-                    isNot: null
-                }
+                type: UsageType.BotProcessing
             },
             by: ["model"],
             _sum: {

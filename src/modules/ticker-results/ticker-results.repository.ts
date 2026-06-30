@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { CreateTickerProcessingDto, TickerResultsResponse, UpdateTickerProcessingDto } from "./types";
 import { PrismaService } from "../prisma/prisma.service";
 import { SearchTickerResultsDto, TickerResultsResponseDto } from "./types/search";
-import { Prisma } from "@prisma/client";
+import { Prisma, UsageType } from "@prisma/client";
 import { mapSearch } from "@app/tools/map.search";
 import { mapSort } from "@app/tools/map.sort";
 import { mapPagination } from "@app/tools/map.pagination";
@@ -15,6 +15,7 @@ export class TickerResultsRepository {
         return this.prisma.$transaction(async (tx) => {
             const usage = await tx.usage.create({
                 data: {
+                    type: UsageType.TickerProcessing,
                     model: data.model,
                     prompt: data.usage.promptTokens ?? 0,
                     response: data.usage.completionTokens ?? 0
@@ -96,9 +97,7 @@ export class TickerResultsRepository {
     async getUsageByModel() {
         const data = await this.prisma.usage.groupBy({
             where: {
-                tickerProcessing: {
-                    isNot: null
-                }
+                type: UsageType.TickerProcessing
             },
             by: ["model"],
             _sum: {

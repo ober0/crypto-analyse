@@ -1,3 +1,10 @@
+enum UsageType {
+  TickerProcessing
+  BotProcessing
+
+  @@map("usage_type")
+}
+
 model Usage {
   id Int @id @default(autoincrement())
 
@@ -8,8 +15,10 @@ model Usage {
 
   tickerProcessing TickerProcessing?
 
-  aiProcessing   AiProcessing? @relation(fields: [aiProcessingId], references: [id])
+  aiProcessing   AiProcessing? @relation(fields: [aiProcessingId], references: [id], onDelete: SetNull)
   aiProcessingId Int?
+
+  type UsageType
 
   createdAt DateTime @default(now())
 

@@ -148,7 +148,7 @@ model Trade {
 
   actions TradeAction[]
 
-  aiProcessing   AiProcessing @relation(fields: [aiProcessingId], references: [id])
+  aiProcessing   AiProcessing @relation(fields: [aiProcessingId], references: [id], onDelete: Cascade)
   aiProcessingId Int
 
   @@index([status])
