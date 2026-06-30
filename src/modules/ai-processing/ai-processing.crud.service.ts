@@ -6,6 +6,7 @@ import { CreateAiProcessingDto } from "./types/create.dto";
 import { AiProcessingResponseDto } from "./types/response.dto";
 import { AiProcessingSearchResponseDto, SearchAiProcessingDto } from "./types/search";
 import { AiProcessingStatsRequestDto, AiProcessingStatsResponseDto } from "./types/stats.dto";
+import { UpdateAiProcessingDto } from "./types/update.dto";
 
 @Injectable()
 export class AiProcessingCrudService {
@@ -86,5 +87,14 @@ export class AiProcessingCrudService {
 
     async getUsageByModel() {
         return this.repository.getUsageByModel();
+    }
+
+    async update(id: number, dto: UpdateAiProcessingDto, userId: number) {
+        const exist = await this.repository.findById(id);
+        if (!exist || exist.userId !== userId) {
+            throw new NotFoundException();
+        }
+
+        return this.repository.update(id, dto);
     }
 }

@@ -20,6 +20,7 @@ import { FiltersAiProcessingDto, SearchAiProcessingDto } from "./types/search";
 import { z } from "zod";
 import { tradeSchema } from "../ai/response-schemas/open-trade";
 import { TokenUsage } from "../ai/types/token-usage.type";
+import { UpdateAiProcessingDto } from "./types/update.dto";
 
 const ACTIVE_STATUSES: ProcessingStatus[] = [ProcessingStatus.Ready, ProcessingStatus.Active, ProcessingStatus.InOrder];
 
@@ -543,5 +544,19 @@ export class AiProcessingRepository {
             response: x._sum.response ?? 0,
             total: (x._sum.prompt ?? 0) + (x._sum.response ?? 0)
         }));
+    }
+
+    async update(id: number, dto: UpdateAiProcessingDto) {
+        return this.prisma.aiProcessing.update({
+            where: { id },
+            data: {
+                checkIntervalMins: dto.checkIntervalMins,
+                customPrompt: dto.customPrompt,
+                withWebSearch: dto.withWebSearch
+            },
+            include: {
+                ticker: true
+            }
+        });
     }
 }

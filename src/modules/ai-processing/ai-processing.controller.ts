@@ -7,6 +7,7 @@ import {
     HttpStatus,
     Param,
     ParseIntPipe,
+    Patch,
     Post,
     UseGuards
 } from "@nestjs/common";
@@ -21,6 +22,7 @@ import { AiProcessingSearchResponseDto, SearchAiProcessingDto } from "./types/se
 import { AiProcessingStatsRequestDto, AiProcessingStatsResponseDto } from "./types/stats.dto";
 import { UsageByModelItemDto } from "../ticker-results/types/usage";
 import { AdminGuard } from "../auth/guards/admin.guard";
+import { UpdateAiProcessingDto } from "./types/update.dto";
 
 @Controller("ai-processing")
 @ApiTags("AI Processing")
@@ -38,6 +40,20 @@ export class AiProcessingController {
         @Body() dto: CreateAiProcessingDto
     ): Promise<AiProcessingResponseDto> {
         return this.service.create(user.id, dto);
+    }
+
+    @Patch(":id")
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: "Обновить Торгового бота" })
+    @ApiOkResponse({ type: AiProcessingResponseDto })
+    @ApiSecurity("bearer")
+    @UseGuards(JwtAuthGuardHttp, AdminGuard)
+    async update(
+        @DecodeUser() user: UserBaseDto,
+        @Body() dto: UpdateAiProcessingDto,
+        @Param("id", ParseIntPipe) id: number
+    ): Promise<AiProcessingResponseDto> {
+        return this.service.update(id, dto, user.id);
     }
 
     @Post("search")
