@@ -71,7 +71,7 @@ export class AiProcessingRepository {
                     orderBy: { createdAt: "asc" }
                 }
             },
-            orderBy: { openedAt: "asc" }
+            orderBy: { openedAt: "desc" }
         });
 
         return { ...item, trades };
