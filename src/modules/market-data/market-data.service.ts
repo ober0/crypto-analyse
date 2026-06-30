@@ -1,18 +1,23 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { GetSymbolDataDto } from "./dto/get-symbol-data.dto";
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { GetMarketDataDto, GetSymbolDataDto, intervalToMs } from "./dto/get-symbol-data.dto";
 import { SymbolDataResponseDto } from "./dto/response.dto";
 import { OHLCVKlineV5, RestClientV5 } from "bybit-api";
+import { TickersService } from "../tickers/tickers.service";
 
 @Injectable()
 export class MarketDataService {
     private readonly logger = new Logger(MarketDataService.name);
     private readonly httpClient: RestClientV5 = new RestClientV5();
 
-    async getSymbolData(dto: GetSymbolDataDto): Promise<SymbolDataResponseDto[]> {
+    constructor(private readonly tickerService: TickersService) {}
+
+    async getSymbolData(
+        dto: GetSymbolDataDto,
+        endTimestamp: number = new Date().getTime()
+    ): Promise<SymbolDataResponseDto[]> {
         const { symbol, candles, interval } = dto;
         const result: SymbolDataResponseDto[] = [];
         const limit = 1000;
-        let endTimestamp = new Date().getTime();
 
         while (result.length < candles) {
             const response = await this.httpClient
@@ -40,6 +45,25 @@ export class MarketDataService {
         }
 
         return result.slice(0, candles);
+    }
+
+    async getMarketData(symbolId: number, dto: GetMarketDataDto): Promise<SymbolDataResponseDto[]> {
+        const ticker = await this.tickerService.findOneById(symbolId);
+
+        if (!ticker) {
+            throw new NotFoundException("Тикер не найден");
+        }
+
+        const endTimestamp = Date.now() - dto.page * dto.candles * intervalToMs(dto.interval);
+
+        return this.getSymbolData(
+            {
+                symbol: ticker.name,
+                candles: dto.candles,
+                interval: dto.interval
+            },
+            endTimestamp
+        );
     }
 }
 

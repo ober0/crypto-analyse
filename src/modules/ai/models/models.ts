@@ -6,14 +6,19 @@ const openRouterConfig = {
     configuration: { baseURL: "https://openrouter.ai/api/v1" }
 };
 
+const polzaAiConfig = {
+    apiKey: process.env.POLZA_AI_API_KEY,
+    configuration: { baseURL: "https://polza.ai/api/v1" }
+};
+
 export const openAiChat = new ChatOpenAI({
-    ...openRouterConfig,
-    model: "openai/gpt-5"
+    ...polzaAiConfig,
+    model: "openai/gpt-5-nano"
 });
 
 export const llamaChat = new ChatOpenAI({
-    ...openRouterConfig,
-    model: "meta-llama/llama-4-maverick"
+    ...polzaAiConfig,
+    model: "meta-llama/llama-4-scout"
 });
 
 export const deepseekChat = new ChatOpenAI({
