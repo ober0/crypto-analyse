@@ -18,7 +18,7 @@ model Usage {
   aiProcessing   AiProcessing? @relation(fields: [aiProcessingId], references: [id], onDelete: SetNull)
   aiProcessingId Int?
 
-  type UsageType?
+  type UsageType
 
   createdAt DateTime @default(now())
 

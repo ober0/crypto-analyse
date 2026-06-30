@@ -28,6 +28,7 @@ services:
             - "${VPS_PORT}:3000"
         command: >
             sh -c "
+                npm run reset
                 npm run migrate:deploy
                 npm run generate
                 npm run seed:deploy
