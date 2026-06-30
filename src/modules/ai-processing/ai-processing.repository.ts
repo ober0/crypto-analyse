@@ -50,8 +50,7 @@ export class AiProcessingRepository {
             where: { id, userId },
             include: {
                 ticker: true,
-                logs: true,
-                usage: true
+                logs: true
             }
         });
 
@@ -465,7 +464,8 @@ export class AiProcessingRepository {
                     create: {
                         type: TradeActionType.Buy,
                         quantity: data.newSize,
-                        price: data.price
+                        price: data.price,
+                        comment: data.description
                     }
                 }
             }
@@ -495,7 +495,8 @@ export class AiProcessingRepository {
                     create: {
                         type: TradeActionType.PartialSell,
                         quantity: data.newSize,
-                        price: data.price
+                        price: data.price,
+                        comment: data.description
                     }
                 }
             }

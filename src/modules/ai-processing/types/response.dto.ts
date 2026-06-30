@@ -2,6 +2,7 @@ import { ApiProperty } from "@nestjs/swagger";
 import {
     Models,
     ProcessingInterval,
+    ProcessingLogsEnum,
     ProcessingStatus,
     TradeActionType,
     TradeCloseReason,
@@ -28,16 +29,16 @@ export class AiProcessingResponseDto {
     @ApiProperty()
     checkIntervalMins: number;
 
-    @ApiProperty()
+    @ApiProperty({ type: Date })
     lastCheckAt: Date | null;
 
-    @ApiProperty()
+    @ApiProperty({ type: Date })
     nextCheckAt: Date | null;
 
-    @ApiProperty()
+    @ApiProperty({ type: Date })
     startAt: Date | null;
 
-    @ApiProperty()
+    @ApiProperty({ type: Date })
     endAt: Date | null;
 
     @ApiProperty({ enum: ProcessingInterval })
@@ -112,7 +113,7 @@ export class TradeResponseDto {
     @ApiProperty()
     invalidationLevel: number;
 
-    @ApiProperty()
+    @ApiProperty({ type: String })
     liquidityZone?: string | null;
 
     @ApiProperty({ enum: TradeDirection })
@@ -169,9 +170,31 @@ export class TradeResponseDto {
     actions: TradeActionResponseDto[];
 }
 
+export class LogsResponseDto {
+    @ApiProperty()
+    id: number;
+
+    @ApiProperty({ enum: ProcessingLogsEnum })
+    type: ProcessingLogsEnum;
+
+    @ApiProperty()
+    text: string;
+
+    @ApiProperty()
+    aiProcessingId: true;
+
+    @ApiProperty()
+    createdAt: Date;
+}
+
 export class AiProcessingDetailResponseDto extends AiProcessingResponseDto {
     @ApiProperty({ type: TradeResponseDto, isArray: true })
     @ValidateNested({ each: true })
     @Type(() => TradeResponseDto)
     trades: TradeResponseDto[];
+
+    @ApiProperty({ type: LogsResponseDto, isArray: true })
+    @ValidateNested({ each: true })
+    @Type(() => LogsResponseDto)
+    logs: LogsResponseDto[];
 }

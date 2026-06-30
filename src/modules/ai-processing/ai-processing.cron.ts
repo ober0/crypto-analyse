@@ -8,9 +8,9 @@ export class AiProcessingCron {
 
     constructor(private readonly service: AiProcessingService) {}
 
-    onModuleInit() {
-        this.createTrade();
-    }
+    // onModuleInit() {
+    //     this.createTrade();
+    // }
 
     @Cron(CronExpression.EVERY_MINUTE)
     async actualizeTickerData() {
