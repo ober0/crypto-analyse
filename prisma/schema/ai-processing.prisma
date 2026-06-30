@@ -1,0 +1,184 @@
+enum ProcessingInterval {
+  OneDay
+  OneWeek
+  OneMonth
+
+  @@map("processing_interval")
+}
+
+enum ProcessingStatus {
+  Ready
+  Active
+  InOrder
+  Error
+  End
+
+  @@map("processing_status")
+}
+
+model AiProcessing {
+  id Int @id @default(autoincrement())
+
+  model Models
+
+  user   User @relation(fields: [userId], references: [id])
+  userId Int
+
+  ticker    Tickers @relation(fields: [tickersId], references: [id])
+  tickersId Int
+
+  checkIntervalMins Int
+  lastCheckAt       DateTime?
+  nextCheckAt       DateTime?
+
+  startAt  DateTime?
+  endAt    DateTime?
+  interval ProcessingInterval
+
+  customPrompt String?
+
+  withWebSearch Boolean @default(true)
+
+  status ProcessingStatus
+
+  trades Trade[]
+
+  usage Usage[]
+
+  logs ProcessingLogs[]
+
+  createdAt DateTime
+
+  @@map("ai_processing")
+}
+
+enum ProcessingLogsEnum {
+  TradePass
+  TradeOpen
+  TradeActive
+  TradeClose
+
+  @@map("processing_logs_enum")
+}
+
+model ProcessingLogs {
+  id Int @id @default(autoincrement())
+
+  type ProcessingLogsEnum
+  text String?
+
+  aiProcessing   AiProcessing @relation(fields: [aiProcessingId], references: [id], onDelete: Cascade)
+  aiProcessingId Int
+
+  createdAt DateTime @default(now())
+
+  @@map("processing_logs")
+}
+
+enum TradeStatus {
+  Open
+  Closed
+
+  @@map("trade_status")
+}
+
+enum TradeDirection {
+  Long
+  Short
+
+  @@map("trade_direction")
+}
+
+enum TradeActionType {
+  Open
+  Buy
+  Sell
+  Change_sl_tp
+  PartialSell
+
+  @@map("trade_action_type")
+}
+
+enum TradeCloseReason {
+  Signal
+  BotDisable
+  Sl
+  Tp
+
+  @@map("trade_close_reason")
+}
+
+model Trade {
+  id Int @id @default(autoincrement())
+
+  tickerId Int
+  ticker   Tickers @relation(fields: [tickerId], references: [id])
+
+  direction TradeDirection
+
+  confidence        Float
+  mainTimeframe     String
+  invalidationLevel Decimal @db.Decimal(32, 16)
+  liquidityZone     String?
+
+  status TradeStatus @default(Open)
+
+  currentSize Decimal @db.Decimal(32, 16)
+
+  averageEntryPrice Decimal @db.Decimal(32, 16)
+
+  stopLoss Decimal? @db.Decimal(32, 16)
+
+  takeProfit Decimal? @db.Decimal(32, 16)
+
+  currentPrice Decimal @db.Decimal(32, 16)
+
+  pnl Decimal? @db.Decimal(32, 16)
+
+  closeReason TradeCloseReason?
+
+  openedAt DateTime  @default(now())
+  closedAt DateTime?
+
+  openDescription  String?
+  closeDescription String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  actions TradeAction[]
+
+  aiProcessing   AiProcessing @relation(fields: [aiProcessingId], references: [id])
+  aiProcessingId Int
+
+  @@index([status])
+  @@index([tickerId])
+  @@map("trade")
+}
+
+model TradeAction {
+  id Int @id @default(autoincrement())
+
+  tradeId Int
+  trade   Trade @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
+  type TradeActionType
+
+  quantity Decimal? @db.Decimal(32, 16)
+
+  price Decimal? @db.Decimal(32, 16)
+
+  stopLoss    Decimal? @db.Decimal(32, 16)
+  oldStopLoss Decimal? @db.Decimal(32, 16)
+
+  takeProfit    Decimal? @db.Decimal(32, 16)
+  oldTakeProfit Decimal? @db.Decimal(32, 16)
+
+  comment String?
+
+  createdAt DateTime @default(now())
+
+  @@index([tradeId])
+  @@index([type])
+  @@map("trade_action")
+}

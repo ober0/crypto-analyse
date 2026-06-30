@@ -13,7 +13,7 @@ import { OpenAiToModelsMap } from "../ai/models/models";
 import { BaseMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { getTickerAnalysisPrompt } from "../ai/prompts/ticker-analyse";
 import { tickerAnalyseFormatInstructions, tickerAnalyseParser } from "../ai/response-schemas/ticker-analyse";
-import { AiService } from "../ai/ai.service";
+import { AiService } from "../ai/services/ai.service";
 
 @Injectable()
 export class TickersProcessingService {
