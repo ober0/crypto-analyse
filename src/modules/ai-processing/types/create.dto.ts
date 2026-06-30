@@ -14,7 +14,7 @@ export class CreateAiProcessingDto {
 
     @ApiProperty()
     @IsNumber()
-    @Min(5)
+    @Min(10)
     @Max(60 * 24)
     checkIntervalMins: number;
 
